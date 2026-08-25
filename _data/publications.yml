@@ -1,602 +1,208 @@
 - year: '2026'
-  title: Cell Invasion Analysis of Tumor Spheroids Using 2D Image Data.
-  authors: Přikryl M, Rousová A, Acimovic I, Vaňhara P, Jan L, Beneš P, Šmarda J,
-    Kozubek M, Štěpka K, Navrátilová J
-  journal: ACS measurement science au
-  volume: '6'
-  issue: '1'
-  pages: 59-67
-  doi: 10.3389/fmolb.2021.610407
+  title: Cell Invasion Analysis of Tumor Spheroids Using 2D Image Data
+  journal: ACS Measurement Science Au
+  doi: 10.1021/acsmeasuresciau.5c00121
   pmid: '41727361'
 - year: '2025'
-  title: Integrated clinical-bio logical infrastructure for precision oncology in
-    pancreatic adenocarcinoma - experience with REDCap implementation in an academic
-    setting.
-  authors: Moravčík P, Weselá P, Kocandová V, Aćimović I, Hlavsa J, Procházka V, Vlažný
-    J, Bárta R, Kala Z, Vaňhara P, Eid M
-  journal: 'Klinicka onkologie : casopis Ceske a Slovenske onkologicke spolecnosti'
-  volume: '38'
-  issue: '6'
-  pages: 464-471
-  doi: 10.48095/ccko2025464
-  pmid: '41553811'
-- year: '2025'
-  title: Insight into the pathogenesis of interstitial lung diseases and near-to-native
-    lung fibrosis models.
-  authors: Štefániková M, Sedláková V, Portakal T, Hampl A, Vaňhara P, Doubková M
-  journal: European journal of medical research
-  volume: '30'
-  issue: '1'
-  pages: '1232'
-  doi: 10.1002/adma.202205083
-  pmid: '41382296'
-- year: '2025'
-  title: End-to-end workflows for liquid biopsy biotyping analysis using combined
-    MALDI MS and machine learning approach.
-  authors: Pečinka L, Pantůčková J, Vlachová M, Moráň L, Růžičková T, Weselá P, Prokeš
-    L, Havel J, Pour L, Ševčíková S, Vaňhara P
-  journal: 'Analytical methods : advancing methods and applications'
-  volume: '17'
-  issue: '48'
-  pages: 9909-9914
-  doi: 10.1039/d5ay01299f
-  pmid: '41347382'
-- year: '2025'
-  title: Artificial intelligence in pancreatic cancer histopathology and diagnostics
-    - implications for clinical decisions and biomarker discovery?
-  authors: Weselá P, Eid M, Moravčík P, Vlažný J, Hlavsa J, Procházka V, Kala Z, Vaňhara
-    P
-  journal: Cell division
-  volume: '20'
-  issue: '1'
-  pages: '15'
-  doi: 10.1097/APO.0000000000000397
-  pmid: '40528234'
-- year: '2025'
-  title: Lipopolysaccharide induces retention of E-cadherin in the endoplasmic reticulum
-    and promotes hybrid epithelial-to-mesenchymal transition of human embryonic stem
-    cells-derived expandable lung epithelial cells.
-  authors: Portakal T, Havlíček V, Herůdková J, Pelková V, Gruntová T, Çakmakci RC,
-    Kotasová H, Hampl A, Vaňhara P
-  journal: 'Inflammation research : official journal of the European Histamine Research
-    Society ... [et al.]'
-  volume: '74'
-  issue: '1'
-  pages: '82'
-  doi: 10.1186/s12967-024-05380-8
-  pmid: '40413286'
-- year: '2025'
-  title: Endoplasmic reticulum stress disrupts signaling via altered processing of
-    transmembrane receptors.
-  authors: Bosakova M, Abraham SP, Wachtell D, Zieba JT, Kot A, Nita A, Czyrek AA,
-    Koudelka A, Ursachi VC, Feketova Z, Rico-Llanos G, Svozilova K, Kocerova P, Fafilek
-    B, Gregor T, Kotaskova J, Duran I, Vanhara P, Doubek M, Mayer J, Soucek K, Krakow
-    D, Krejci P
-  journal: 'Cell communication and signaling : CCS'
-  volume: '23'
-  issue: '1'
-  pages: '209'
-  doi: 10.1016/j.joca.2017.05.014
-  pmid: '40307870'
-- year: '2025'
-  title: Diff erent expression of genes involved in unfolded protein response in multiple
-    myeloma and extramedullary dis ease patients.
-  authors: Dostálová A, Vlachová M, Růžičková T, Vaňhara P, Štork M, Ševčíková S
-  journal: 'Klinicka onkologie : casopis Ceske a Slovenske onkologicke spolecnosti'
-  volume: '38'
-  issue: '1'
-  pages: 45-51
-  doi: 10.48095/ccko202545
-  pmid: '40088436'
-- year: '2025'
   title: Laser-induced plasma spectroscopy in pulsed laser ablation synthesis of nanoparticles
-    in liquid.
-  authors: Novotný K, Krempl I, Afonin I, Prokeš L, Vaňhara P, Havel J
+    in liquid
   journal: Talanta
-  volume: '290'
-  issue: ''
-  pages: '127767'
   doi: 10.1016/j.talanta.2025.127767
   pmid: '40015063'
-- year: '2025'
-  title: 'Ex-Vivo 3D Cellular Models of Pancreatic Ductal Adenocarcinoma: From Embryonic
-    Development to Precision Oncology.'
-  authors: Acimovic I, Gabrielová V, Martínková S, Eid M, Vlažný J, Moravčík P, Hlavsa
-    J, Moráň L, Cakmakci RC, Staňo P, Procházka V, Kala Z, Trnka J, Vaňhara P
-  journal: Pancreas
-  volume: '54'
-  issue: '1'
-  pages: e57-e71
-  doi: 10.1097/MPA.0000000000002393
-  pmid: '39074056'
-- year: '2024'
-  title: Discriminating fingerprints of chronic neuropathic pain following spinal
-    cord injury using artificial neural networks and mass spectrometry analysis of
-    female mice serum.
-  authors: Deulofeu M, Peña-Méndez EM, Vaňhara P, Havel J, Moráň L, Pečinka L, Bagó-Mas
-    A, Verdú E, Salvadó V, Boadas-Vaello P
-  journal: Neurochemistry international
-  volume: '181'
-  issue: ''
-  pages: '105890'
-  doi: 10.1016/j.neuint.2024.105890
-  pmid: '39455011'
-- year: '2024'
-  title: Metabolism of primary high-grade serous ovarian carcinoma (HGSOC) cells under
-    limited glutamine or glucose availability.
-  authors: Šimčíková D, Gardáš D, Pelikán T, Moráň L, Hruda M, Hložková K, Pivetta
-    T, Hendrych M, Starková J, Rob L, Vaňhara P, Heneberg P
-  journal: Cancer & metabolism
-  volume: '12'
-  issue: '1'
-  pages: '27'
-  doi: 10.1016/j.ejmech.2023.115467
-  pmid: '39285269'
-- year: '2024'
-  title: Liquid biopsy of peripheral blood using mass spectrometry detects primary
-    extramedullary disease in multiple myeloma patients.
-  authors: Vlachová M, Pečinka L, Gregorová J, Moráň L, Růžičková T, Kovačovicová
-    P, Almáši M, Pour L, Štork M, Hájek R, Jelínek T, Popková T, Večeřa M, Havel J,
-    Vaňhara P, Ševčíková S
-  journal: Scientific reports
-  volume: '14'
-  issue: '1'
-  pages: '18777'
-  doi: 10.1016/0168-583X(88)90063-8
-  pmid: '39138296'
-- year: '2024'
-  title: Intact cell mass spectrometry coupled with machine learning reveals minute
-    changes induced by single gene silencing.
-  authors: Pečinka L, Moráň L, Kovačovicová P, Meloni F, Havel J, Pivetta T, Vaňhara
-    P
-  journal: Heliyon
-  volume: '10'
-  issue: '9'
-  pages: e29936
-  doi: 10.1016/j.cmpb.2014.07.007.Median
-  pmid: '38707401'
 - year: '2024'
   title: Pulsed laser ablation synthesis of fresh Te nanoparticles for matrix assisted
-    laser desorption/ionization mass spectrometry (MALDI-MS) applications.
-  authors: Novotný K, Krempl I, Pečinka L, Moráň L, Vaňhara P, Havel J
+    laser desorption/ionization mass spectrometry (MALDI-MS) applications
   journal: Talanta
-  volume: '274'
-  issue: ''
-  pages: '126061'
   doi: 10.1016/j.talanta.2024.126061
   pmid: '38583329'
-- year: '2023'
-  title: The endoplasmic reticulum and its signaling pathways - a novel target for
-    multiple myeloma treatment.
-  authors: Dostálová A, Vlachová M, Gregorová J, Moráň L, Pečinka L, Gabrielová V,
-    Vaňhara P, Ševčíková S
-  journal: 'Klinicka onkologie : casopis Ceske a Slovenske onkologicke spolecnosti'
-  volume: '36'
-  issue: '6'
-  pages: 440-446
-  doi: 10.48095/ccko2023440
-  pmid: '38158232'
-- year: '2023'
-  title: Improved Screening of Monoclonal Gammopathy Patients by MALDI-TOF Mass Spectrometry.
-  authors: Pečinka L, Vlachová M, Moráň L, Gregorová J, Porokh V, Kovačovicová P,
-    Almáši M, Pour L, Štork M, Havel J, Ševčíková S, Vaňhara P
-  journal: Journal of the American Society for Mass Spectrometry
-  volume: '34'
-  issue: '12'
-  pages: 2646-2653
-  doi: 10.1021/ac00234a011
-  pmid: '37994781'
-- year: '2023'
-  title: A novel heteroleptic Cu(II)-phenanthroline-UDCA complex as lipoxygenase inhibitor
-    and ER-stress inducer in cancer cell lines.
-  authors: Masuri S, Moráň L, Vesselá T, Cadoni E, Cabiddu MG, Pečinka L, Gabrielová
-    V, Meloni F, Havel J, Vaňhara P, Pivetta T
-  journal: Journal of inorganic biochemistry
-  volume: '246'
-  issue: ''
-  pages: '112301'
-  doi: 10.1016/j.jinorgbio.2023.112301
-  pmid: '37392615'
-- year: '2023'
-  title: Laser ablation synthesis of tellurium carbides using tellurium with nanodiamond
-    nanocomposite.
-  authors: Chygorin E, Pečinka L, Vaňhara P, Novotný K, Krempl I, Havel J
-  journal: 'Rapid communications in mass spectrometry : RCM'
-  volume: '37'
-  issue: '12'
-  pages: e9520
-  doi: 10.1002/rcm.9520
-  pmid: '37038657'
+- year: '2024'
+  title: Intact cell mass spectrometry coupled with machine learning reveals minute
+    changes induced by single gene silencing
+  journal: Heliyon
+  doi: 10.1016/j.heliyon.2024.e29936
+  pmid: ''
 - year: '2023'
   title: Artificial Neural Networks Coupled with MALDI-TOF MS Serum Fingerprinting
-    To Classify and Diagnose Pathological Pain Subtypes in Preclinical Models.
-  authors: Deulofeu M, Peña-Méndez EM, Vaňhara P, Havel J, Moráň L, Pečinka L, Bagó-Mas
-    A, Verdú E, Salvadó V, Boadas-Vaello P
-  journal: ACS chemical neuroscience
-  volume: '14'
-  issue: '2'
-  pages: 300-311
-  doi: 10.1016/j.ijms.2006.10.005
-  pmid: '36584284'
-- year: '2022'
-  title: Expandable Lung Epithelium Differentiated from Human Embryonic Stem Cells.
-  authors: Kotasová H, Capandová M, Pelková V, Dumková J, Koledová Z, Remšík J, Souček
-    K, Garlíková Z, Sedláková V, Rabata A, Vaňhara P, Moráň L, Pečinka L, Porokh V,
-    Kučírek M, Streit L, Havel J, Hampl A
-  journal: Tissue engineering and regenerative medicine
-  volume: '19'
-  issue: '5'
-  pages: 1033-1050
-  doi: 10.3791/2393
-  pmid: '35670910'
-- year: '2022'
-  title: Combined efficacy of Cinnamomum zeylanicum and doxorubicin against leukemia
-    through regulation of TRAIL and NF-kappa B pathways in rat model.
-  authors: Bukhari S, Siddique MH, Naeem A, Khan I, Ali Z, Essa A, Fazal F, Anis RA,
-    Moran L, Sultan A, Murtaza I, Vanhara P, Anees M
-  journal: Molecular biology reports
-  volume: '49'
-  issue: '7'
-  pages: 6495-6507
-  doi: 10.5935/MedicalExpress.2017.05.07
-  pmid: '35579734'
-- year: '2022'
-  title: Matrix enrichment by black phosphorus improves ionization and reproducibility
-    of mass spectrometry of intact cells, peptides, and amino acids.
-  authors: Mandal G, Moráň L, Pečinka L, Vaňhara P, Havel J
-  journal: Scientific reports
-  volume: '12'
-  issue: '1'
-  pages: '1175'
-  doi: 10.1021/ac070847e
-  pmid: '35064192'
-- year: '2021'
-  title: 'Copper(II) Phenanthroline-Based Complexes as Potential AntiCancer Drugs:
-    A Walkthrough on the Mechanisms of Action.'
-  authors: Masuri S, Vaňhara P, Cabiddu MG, Moráň L, Havel J, Cadoni E, Pivetta T
-  journal: Molecules (Basel, Switzerland)
-  volume: '27'
-  issue: '1'
-  pages: ''
-  doi: 10.1039/D0DT01742F
-  pmid: '35011273'
+    To Classify and Diagnose Pathological Pain Subtypes in Preclinical Models
+  journal: ACS Chemical Neuroscience
+  doi: 10.1021/acschemneuro.2c00665
+  pmid: ''
+- year: '2023'
+  title: Ternary copper(ii) complexes of 1,10-phenanthroline and coumarin-based oxylacetates
+    as pro-apoptotic UPR CHOP inducers
+  journal: New Journal of Chemistry
+  doi: 10.1039/D3NJ01317K
+  pmid: ''
 - year: '2020'
   title: The first copper(ii) complex with 1,10-phenanthroline and salubrinal with
-    interesting biochemical properties.
-  authors: Masuri S, Cadoni E, Cabiddu MG, Isaia F, Demuru MG, Moráň L, Buček D, Vaňhara
-    P, Havel J, Pivetta T
-  journal: 'Metallomics : integrated biometal science'
-  volume: '12'
-  issue: '6'
-  pages: 891-901
+    interesting biochemical properties
+  journal: Metallomics
   doi: 10.1039/d0mt00006j
   pmid: '32337526'
 - year: '2019'
-  title: Mixed copper(ii)-phenanthroline complexes induce cell death of ovarian cancer
-    cells by evoking the unfolded protein response.
-  authors: Moráň L, Pivetta T, Masuri S, Vašíčková K, Walter F, Prehn J, Elkalaf M,
-    Trnka J, Havel J, Vaňhara P
-  journal: 'Metallomics : integrated biometal science'
-  volume: '11'
-  issue: '9'
-  pages: 1481-1489
+  title: Mixed copper(ii)–phenanthroline complexes induce cell death of ovarian cancer
+    cells by evoking the unfolded protein response
+  journal: Metallomics
   doi: 10.1039/c9mt00055k
   pmid: '31348483'
 - year: '2019'
-  title: Rapid discrimination of multiple myeloma patients by artificial neural networks
-    coupled with mass spectrometry of peripheral blood plasma.
-  authors: Deulofeu M, Kolářová L, Salvadó V, María Peña-Méndez E, Almáši M, Štork
-    M, Pour L, Boadas-Vaello P, Ševčíková S, Havel J, Vaňhara P
-  journal: Scientific reports
-  volume: '9'
-  issue: '1'
-  pages: '7975'
-  doi: 10.1007/s00521-013-1408-9
-  pmid: '31138828'
-- year: '2019'
-  title: A metabolic switch in proteasome inhibitor-resistant multiple myeloma ensures
-    higher mitochondrial metabolism, protein folding and sphingomyelin synthesis.
-  authors: Besse L, Besse A, Mendez-Lopez M, Vasickova K, Sedlackova M, Vanhara P,
-    Kraus M, Bader J, Ferreira RB, Castellano RK, Law BK, Driessen C
-  journal: Haematologica
-  volume: '104'
-  issue: '9'
-  pages: e415-e419
-  doi: 10.3324/haematol.2018.207704
-  pmid: '30792209'
-- year: '2019'
-  title: 'Laser ablation synthesis of carbon-phosphides from graphene/nanodiamond-phosphorus
-    composite precursors: Laser desorption ionisation time-of-flight mass spectrometry.'
-  authors: Mandal G, Vaňhara P, Havel J
-  journal: 'Rapid communications in mass spectrometry : RCM'
-  volume: '33'
-  issue: '5'
-  pages: 520-526
-  doi: 10.1002/rcm.8379
-  pmid: '30604469'
-- year: '2019'
-  title: Mass spectrometric discrimination of phospholipid patterns in cisplatin-resistant
-    and -sensitive cancer cells.
-  authors: Cadoni E, Vanhara P, Valletta E, Pinna E, Vascellari S, Caddeo G, Isaia
-    F, Pani A, Havel J, Pivetta T
-  journal: 'Rapid communications in mass spectrometry : RCM'
-  volume: '33'
-  issue: '1'
-  pages: 97-106
+  title: Mass spectrometric discrimination of phospholipid patterns in cisplatin‐resistant
+    and ‐sensitive cancer cells
+  journal: Rapid Communications in Mass Spectrometry
   doi: 10.1002/rcm.8320
   pmid: '30376198'
 - year: '2018'
-  title: Alleviation of endoplasmic reticulum stress by tauroursodeoxycholic acid
-    delays senescence of mouse ovarian surface epithelium.
-  authors: Vašíčková K, Moráň L, Gurín D, Vaňhara P
-  journal: Cell and tissue research
-  volume: '374'
-  issue: '3'
-  pages: 643-652
-  doi: 10.1007/s00441-018-2888-9
-  pmid: '30066106'
-- year: '2018'
   title: Soluble Cripto-1 Induces Accumulation of Supernumerary Centrosomes and Formation
-    of Aberrant Mitoses in Human Embryonic Stem Cells.
-  authors: Porokh V, Vaňhara P, Bárta T, Jurečková L, Bohačiaková D, Pospíšilová V,
-    Mináriková D, Holubcová Z, Pelková V, Souček K, Hampl A
-  journal: Stem cells and development
-  volume: '27'
-  issue: '16'
-  pages: 1077-1084
+    of Aberrant Mitoses in Human Embryonic Stem Cells
+  journal: Stem Cells and Development
   doi: 10.1089/scd.2018.0017
-  pmid: '29882484'
+  pmid: ''
+- year: '2018'
+  title: Alleviation of endoplasmic reticulum stress by tauroursodeoxycholic acid
+    delays senescence of mouse ovarian surface epithelium
+  journal: Cell and Tissue Research
+  doi: 10.1007/s00441-018-2888-9
+  pmid: ''
+- year: '2018'
+  title: 'TUSC3: functional duality of a cancer gene'
+  journal: Cellular and Molecular Life Sciences
+  doi: 10.1007/s00018-017-2660-4
+  pmid: ''
 - year: '2018'
   title: Intact Cell Mass Spectrometry as a Quality Control Tool for Revealing Minute
-    Phenotypic Changes of Cultured Human Embryonic Stem Cells.
-  authors: Vaňhara P, Kučera L, Prokeš L, Jurečková L, Peña-Méndez EM, Havel J, Hampl
-    A
-  journal: Stem cells translational medicine
-  volume: '7'
-  issue: '1'
-  pages: 109-114
+    Phenotypic Changes of Cultured Human Embryonic Stem Cells
+  journal: STEM CELLS Translational Medicine
   doi: 10.1002/sctm.17-0107
   pmid: '29248004'
-- year: '2018'
-  title: 'TUSC3: functional duality of a cancer gene.'
-  authors: Vašíčková K, Horak P, Vaňhara P
-  journal: 'Cellular and molecular life sciences : CMLS'
-  volume: '75'
-  issue: '5'
-  pages: 849-857
-  doi: 10.7150/ijms.16381
-  pmid: '28929175'
-- year: '2017'
-  title: Synthesis and Profiling of a Novel Potent Selective Inhibitor of CHK1 Kinase
-    Possessing Unusual N-trifluoromethylpyrazole Pharmacophore Resistant to Metabolic
-    N-dealkylation.
-  authors: Samadder P, Suchánková T, Hylse O, Khirsariya P, Nikulenkov F, Drápela
-    S, Straková N, Vaňhara P, Vašíčková K, Kolářová H, Binó L, Bittová M, Ovesná P,
-    Kollár P, Fedr R, Ešner M, Jaroš J, Hampl A, Krejčí L, Paruch K, Souček K
-  journal: Molecular cancer therapeutics
-  volume: '16'
-  issue: '9'
-  pages: 1831-1842
-  doi: 10.1158/1535-7163.MCT-17-0018
-  pmid: '28619751'
-- year: '2017'
-  title: Clusters of Monoisotopic Elements for Calibration in (TOF) Mass Spectrometry.
-  authors: Kolářová L, Prokeš L, Kučera L, Hampl A, Peňa-Méndez E, Vaňhara P, Havel
-    J
-  journal: Journal of the American Society for Mass Spectrometry
-  volume: '28'
-  issue: '3'
-  pages: 419-427
-  doi: 10.1007/s13361-016-1567-x
-  pmid: '27995502'
 - year: '2016'
   title: The role of the endoplasmic reticulum stress in stemness, pluripotency and
-    development.
-  authors: Kratochvílová K, Moráň L, Paďourová S, Stejskal S, Tesařová L, Šimara P,
-    Hampl A, Koutná I, Vaňhara P
-  journal: European journal of cell biology
-  volume: '95'
-  issue: 3-5
-  pages: 115-23
+    development
+  journal: European Journal of Cell Biology
   doi: 10.1016/j.ejcb.2016.02.002
   pmid: '26905505'
 - year: '2016'
   title: Multivariate Calibration Approach for Quantitative Determination of Cell-Line
-    Cross Contamination by Intact Cell Mass Spectrometry and Artificial Neural Networks.
-  authors: Valletta E, Kučera L, Prokeš L, Amato F, Pivetta T, Hampl A, Havel J, Vaňhara
-    P
-  journal: PloS one
-  volume: '11'
-  issue: '1'
-  pages: e0147414
-  doi: 10.1021/acs.analchem.5b00010
+    Cross Contamination by Intact Cell Mass Spectrometry and Artificial Neural Networks
+  journal: PLOS ONE
+  doi: 10.1371/journal.pone.0147414
   pmid: '26821236'
+- year: '2016'
+  title: Clusters of Monoisotopic Elements for Calibration in (TOF) Mass Spectrometry
+  journal: Journal of The American Society for Mass Spectrometry
+  doi: 10.1007/s13361-016-1567-x
+  pmid: ''
 - year: '2015'
-  title: The erratic antibiotic susceptibility patterns of bacterial pathogens causing
-    urinary tract infections.
-  authors: Ahmed I, Sajed M, Sultan A, Murtaza I, Yousaf S, Maqsood B, Vanhara P,
-    Anees M
-  journal: EXCLI journal
-  volume: '14'
-  issue: ''
-  pages: 916-25
-  doi: 10.17179/excli2015-207
-  pmid: '26648826'
-- year: '2015'
-  title: Tumor suppressor candidate 3 (TUSC3) prevents the epithelial-to-mesenchymal
-    transition and inhibits tumor growth by modulating the endoplasmic reticulum stress
-    response in ovarian cancer cells.
-  authors: Kratochvílová K, Horak P, Ešner M, Souček K, Pils D, Anees M, Tomasich
-    E, Dráfi F, Jurtíková V, Hampl A, Krainer M, Vaňhara P
-  journal: International journal of cancer
-  volume: '137'
-  issue: '6'
-  pages: 1330-40
-  doi: 10.1002/ijc.29502
-  pmid: '25735931'
-- year: '2015'
-  title: Use of flower-like gold nanoparticles in time-of-flight mass spectrometry.
-  authors: Kolářová L, Kučera L, Vaňhara P, Hampl A, Havel J
-  journal: 'Rapid communications in mass spectrometry : RCM'
-  volume: '29'
-  issue: '17'
-  pages: 1585-1595
-  doi: 10.1002/rcm.7265
-  pmid: '28339158'
-- year: '2015'
-  title: The potential evasion of immune surveillance in mucosa associated lymphoid
-    tissue lymphoma by DcR2-mediated up-regulation of nuclear factor-κB.
-  authors: Anees M, Horak P, Schiefer AI, Vaňhara P, El-Gazzar A, Perco P, Kiesewetter
-    B, Müllauer L, Streubel B, Raderer M, Krainer M
-  journal: Leukemia & lymphoma
-  volume: '56'
-  issue: '5'
-  pages: 1440-9
+  title: 'Coordination compounds in cancer: Past, present and perspectives'
+  journal: Journal of Applied Biomedicine
+  doi: 10.1016/j.jab.2015.03.003
+  pmid: ''
+- year: '2014'
+  title: Intravenous insulin therapy during lung resection does not affect lung function
+    or surfactant proteins
+  journal: BMC Pulmonary Medicine
+  doi: 10.1186/1471-2466-14-155
+  pmid: ''
+- year: '2014'
+  title: TUSC3 Loss Alters the ER Stress Response and Accelerates Prostate Cancer
+    Growth in vivo
+  journal: Scientific Reports
+  doi: 10.1038/srep03739
+  pmid: '24435307'
+- year: '2014'
+  title: The potential evasion of immune surveillance in MALT lymphoma by DcR2-mediated
+    upregulation of NF-κB
+  journal: Leuk Lymphoma
   doi: 10.3109/10428194.2014.953149
   pmid: '25248880'
 - year: '2014'
-  title: Intravenous insulin therapy during lung resection does not affect lung function
-    or surfactant proteins.
-  authors: Ručka Z, Koutná I, Tesařová L, Potěšilová M, Stejskal S, Simara P, Vaňhara
-    P, DoleŽel J, Zvoníček V, Coufal O, Capov I
-  journal: BMC pulmonary medicine
-  volume: '14'
-  issue: ''
-  pages: '155'
-  doi: 10.1016/j.resp.2011.05.015
-  pmid: '25278226'
-- year: '2014'
-  title: TUSC3 loss alters the ER stress response and accelerates prostate cancer
-    growth in vivo.
-  authors: Horak P, Tomasich E, Vaňhara P, Kratochvílová K, Anees M, Marhold M, Lemberger
-    CE, Gerschpacher M, Horvat R, Sibilia M, Pils D, Krainer M
-  journal: Scientific reports
-  volume: '4'
-  issue: ''
-  pages: '3739'
-  doi: 10.1038/srep03739
-  pmid: '24435307'
+  title: Tissue profiling by nanogold-mediated mass spectrometry and artificial neural
+    networks in the mouse model of human primary hyperoxaluria 1
+  journal: Journal of Applied Biomedicine
+  doi: 10.1016/j.jab.2013.12.001
+  pmid: ''
 - year: '2013'
   title: Mutual cytokine crosstalk between colon cancer cells and microenvironment
-    initiates development of distant metastases.
-  authors: Vaňhara P, Souček K
+    initiates development of distant metastases
   journal: JAK-STAT
-  volume: '2'
-  issue: '2'
-  pages: e23810
-  doi: 10.1016/j.cell.2011.11.025
+  doi: 10.4161/jkst.23810
   pmid: '24058810'
 - year: '2013'
+  title: Artificial neural networks in medical diagnosis
+  journal: Journal of Applied Biomedicine
+  doi: 10.2478/v10136-012-0031-x
+  pmid: ''
+- year: '2013'
   title: Differential effects of insulin and dexamethasone on pulmonary surfactant-associated
-    genes and proteins in A549 and H441 cells and lung tissue.
-  authors: Rucka Z, Vanhara P, Koutna I, Tesarova L, Potesilova M, Stejskal S, Simara
-    P, Dolezel J, Zvonicek V, Coufal O, Capov I
-  journal: International journal of molecular medicine
-  volume: '32'
-  issue: '1'
-  pages: 211-8
+    genes and proteins in A549 and H441 cells and lung tissue
+  journal: International Journal of Molecular Medicine
   doi: 10.3892/ijmm.2013.1363
-  pmid: '23620014'
+  pmid: ''
+- year: '2013'
+  title: 'Formation of Secretory Senescent Cells in Prostate Tumors: The Role of Androgen
+    Receptor Activity and Cell Cycle Regulation'
+  journal: Tumor Dormancy, Quiescence, and Senescence, Volume 1
+  doi: 10.1007/978-94-007-5958-9_26
+  pmid: ''
 - year: '2013'
   title: Loss of the oligosaccharyl transferase subunit TUSC3 promotes proliferation
-    and migration of ovarian cancer cells.
-  authors: Vaňhara P, Horak P, Pils D, Anees M, Petz M, Gregor W, Zeillinger R, Krainer
-    M
-  journal: International journal of oncology
-  volume: '42'
-  issue: '4'
-  pages: 1383-9
+    and migration of ovarian cancer cells
+  journal: International Journal of Oncology
   doi: 10.3892/ijo.2013.1824
   pmid: '23404293'
-- year: '2013'
-  title: Methylation status of TUSC3 is a prognostic factor in ovarian cancer.
-  authors: Pils D, Horak P, Vanhara P, Anees M, Petz M, Alfanz A, Gugerell A, Wittinger
-    M, Gleiss A, Auner V, Tong D, Zeillinger R, Braicu EI, Sehouli J, Krainer M
-  journal: Cancer
-  volume: '119'
-  issue: '5'
-  pages: 946-54
-  doi: 10.1002/cncr.27850
-  pmid: '23096450'
 - year: '2012'
   title: 'Growth/differentiation factor-15: prostate cancer suppressor or promoter?'
-  authors: Vaňhara P, Hampl A, Kozubík A, Souček K
-  journal: Prostate cancer and prostatic diseases
-  volume: '15'
-  issue: '4'
-  pages: 320-8
+  journal: Prostate Cancer and Prostatic Diseases
   doi: 10.1038/pcan.2012.6
   pmid: '22370725'
-- year: '2011'
-  title: hVps37A Status affects prognosis and cetuximab sensitivity in ovarian cancer.
-  authors: Wittinger M, Vanhara P, El-Gazzar A, Savarese-Brenner B, Pils D, Anees
-    M, Grunt TW, Sibilia M, Holcmann M, Horvat R, Schemper M, Zeillinger R, Schöfer
-    C, Dolznig H, Horak P, Krainer M
-  journal: 'Clinical cancer research : an official journal of the American Association
-    for Cancer Research'
-  volume: '17'
-  issue: '24'
-  pages: 7816-27
-  doi: 10.1158/1078-0432.CCR-11-0408
-  pmid: '22016507'
+- year: '2012'
+  title: Methylation status of TUSC3 is a prognostic factor in ovarian cancer
+  journal: Cancer
+  doi: 10.1002/cncr.27850
+  pmid: '23096450'
 - year: '2011'
   title: 'Expression of immune-modulatory molecules HLA-G and HLA-E by tumor cells
-    in glioblastomas: an unexpected prognostic significance?'
-  authors: Kren L, Slaby O, Muckova K, Lzicarova E, Sova M, Vybihal V, Svoboda T,
-    Fadrus P, Lakomy R, Vanhara P, Krenova Z, Sterba J, Smrcka M, Michalek J
-  journal: 'Neuropathology : official journal of the Japanese Society of Neuropathology'
-  volume: '31'
-  issue: '2'
-  pages: 129-34
+    in glioblastomas: An unexpected prognostic significance?'
+  journal: Neuropathology
   doi: 10.1111/j.1440-1789.2010.01149.x
-  pmid: '20667016'
+  pmid: ''
+- year: '2011'
+  title: HVps37A status affects prognosis and cetuximab sensitivity in ovarian cancer
+  journal: Clinical Cancer Research
+  doi: 10.1158/1078-0432.CCR-11-0408
+  pmid: ''
 - year: '2010'
   title: 'Production of immune-modulatory nonclassical molecules HLA-G and HLA-E by
-    tumor infiltrating ameboid microglia/macrophages in glioblastomas: a role in innate
+    tumor infiltrating ameboid microglia/macrophages in glioblastomas: A role in innate
     immunity?'
-  authors: Kren L, Muckova K, Lzicarova E, Sova M, Vybihal V, Svoboda T, Fadrus P,
-    Smrcka M, Slaby O, Lakomy R, Vanhara P, Krenova Z, Michalek J
-  journal: Journal of neuroimmunology
-  volume: '220'
-  issue: 1-2
-  pages: 131-5
+  journal: Journal of Neuroimmunology
   doi: 10.1016/j.jneuroim.2010.01.014
-  pmid: '20167379'
+  pmid: ''
 - year: '2009'
-  title: Copper ions regulate cytotoxicity of disulfiram to myeloid leukemia cells.
-  authors: Navrátilová J, Jungová P, Vanhara P, Preisler J, Kanicky V, Smarda J
-  journal: International journal of molecular medicine
-  volume: '24'
-  issue: '5'
-  pages: 661-70
+  title: Copper ions regulate cytotoxicity of disulfiram to myeloid leukemia cells
+  journal: International Journal of Molecular Medicine
   doi: 10.3892/ijmm_00000277
-  pmid: '19787200'
+  pmid: ''
 - year: '2009'
-  title: Growth/differentiation factor-15 inhibits differentiation into osteoclasts--a
-    novel factor involved in control of osteoclast differentiation.
-  authors: Vanhara P, Lincová E, Kozubík A, Jurdic P, Soucek K, Smarda J
-  journal: Differentiation; research in biological diversity
-  volume: '78'
-  issue: '4'
-  pages: 213-22
+  title: Growth/differentiation factor-15 inhibits differentiation into osteoclasts-A
+    novel factor involved in control of osteoclast differentiation
+  journal: Differentiation
   doi: 10.1016/j.diff.2009.07.008
   pmid: '19695766'
 - year: '2007'
-  title: c-Jun induces apoptosis of starved BM2 monoblasts by activating cyclin A-CDK2.
-  authors: Vanhara P, Bryja V, Horváth V, Kozubík A, Hampl A, Smarda J
-  journal: Biochemical and biophysical research communications
-  volume: '353'
-  issue: '1'
-  pages: 92-7
+  title: c-Jun induces apoptosis of starved BM2 monoblasts by activating cyclin A-CDK2
+  journal: Biochemical and Biophysical Research Communications
   doi: 10.1016/j.bbrc.2006.11.124
   pmid: '17173865'
 - year: '2006'
-  title: '[Regulation of osteoclast activity: a new approach in the therapy of bone
-    diseases].'
-  authors: Vanhara P, Smarda J
-  journal: Casopis lekaru ceskych
-  volume: '145'
-  issue: '8'
-  pages: 606-10
+  title: 'Geographical sexual size dimorphism in an ant-eating spider, Zodarion rubidum
+    (Araneae: Zodariidae)'
+  journal: Journal of Natural History
+  doi: 10.1080/00222930600901417
+  pmid: ''
+- year: '2006'
+  title: 'Regulation of osteoclast activity: A new approach in the therapy of bone
+    diseases | Regulace aktivity osteoklastů: Prostor pro terapii některých onemocnění
+    kostí'
+  journal: Casopis Lekaru Ceskych
   doi: ''
-  pmid: '16995415'
+  pmid: ''
