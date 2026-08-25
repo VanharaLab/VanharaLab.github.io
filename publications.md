@@ -19,7 +19,6 @@ title: PubMed publications
   **{{ pub.title }}**.  
   *{{ pub.journal }}*. 
   {% if pub.volume %}{{ pub.year }};{{ pub.volume }}{% if pub.issue %}({{ pub.issue }}){% endif %}{% if pub.pages %}:{{ pub.pages }}{% endif %}.{% endif %}
-  {% if pub.doi %} [DOI](https://doi.org/{{ pub.doi }}).{% endif %}
   {% if pub.pmid %} [PubMed](https://pubmed.ncbi.nlm.nih.gov/{{ pub.pmid }}/).{% endif %}
 
 {% endfor %}
