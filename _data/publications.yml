@@ -45,14 +45,15 @@
 - year: '2025'
   title: Integrated clinical-bio logical infrastructure for precision oncology in
     pancreatic adenocarcinoma - experience with REDCap implementation in an academic
-    setting
-  authors: ''
-  journal: Klinická onkologie
-  volume: ''
-  issue: ''
-  pages: ''
-  doi: ''
-  pmid: ''
+    setting.
+  authors: Moravčík P, Weselá P, Kocandová V, Aćimović I, Hlavsa J, Procházka V, Vlažný
+    J, Bárta R, Kala Z, Vaňhara P, Eid M
+  journal: 'Klinicka onkologie : casopis Ceske a Slovenske onkologicke spolecnosti'
+  volume: '38'
+  issue: '6'
+  pages: 464-471
+  doi: 10.48095/ccko2025464
+  pmid: '41553811'
 - year: '2024'
   title: Pulsed laser ablation synthesis of fresh Te nanoparticles for matrix assisted
     laser desorption/ionization mass spectrometry (MALDI-MS) applications.
