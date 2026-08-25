@@ -1,4 +1,15 @@
 - year: '2026'
+  title: 'Lost cells, retained structure: proteomic mapping of decellularized lung
+    matrisome across species'
+  authors: Čimborová K, Pelková V, Bernatík O, Potěšil D, Pustka V, Vaškovicová N,
+    Kotasová H, Mitáš L, Vaňhara P, Sedláková V, Zdráhal Z, Bohačiaková D, Hampl A
+  journal: Materials &amp; Design
+  volume: '270'
+  issue: ''
+  pages: '116823'
+  doi: 10.1016/j.matdes.2026.116823
+  pmid: ''
+- year: '2026'
   title: Cell Invasion Analysis of Tumor Spheroids Using 2D Image Data.
   authors: Přikryl M, Rousová A, Acimovic I, Vaňhara P, Jan L, Beneš P, Šmarda J,
     Kozubek M, Štěpka K, Navrátilová J
@@ -18,6 +29,30 @@
   pages: '127767'
   doi: 10.1016/j.talanta.2025.127767
   pmid: '40015063'
+- year: '2025'
+  title: Endoplasmic reticulum stress disrupts signaling via altered processing of
+    transmembrane receptors.
+  authors: Bosakova M, Abraham SP, Wachtell D, Zieba JT, Kot A, Nita A, Czyrek AA,
+    Koudelka A, Ursachi VC, Feketova Z, Rico-Llanos G, Svozilova K, Kocerova P, Fafilek
+    B, Gregor T, Kotaskova J, Duran I, Vanhara P, Doubek M, Mayer J, Soucek K, Krakow
+    D, Krejci P
+  journal: 'Cell communication and signaling : CCS'
+  volume: '23'
+  issue: '1'
+  pages: '209'
+  doi: 10.1186/s12964-025-02208-w
+  pmid: '40307870'
+- year: '2025'
+  title: Integrated clinical-bio logical infrastructure for precision oncology in
+    pancreatic adenocarcinoma - experience with REDCap implementation in an academic
+    setting
+  authors: ''
+  journal: Klinická onkologie
+  volume: ''
+  issue: ''
+  pages: ''
+  doi: ''
+  pmid: ''
 - year: '2024'
   title: Pulsed laser ablation synthesis of fresh Te nanoparticles for matrix assisted
     laser desorption/ionization mass spectrometry (MALDI-MS) applications.
