@@ -1,13 +1,13 @@
 from pathlib import Path
-import re
 import time
 
 import requests
 import yaml
+import xml.etree.ElementTree as ET
 
 
 # ============================================================
-# CONFIGURATION
+# CONFIG
 # ============================================================
 
 ORCID_ID = "0000-0002-7470-177X"
@@ -27,59 +27,180 @@ PUBMED_EFETCH_URL = (
 
 CROSSREF_URL = "https://api.crossref.org/works/"
 
+OUTPUT = (
+    Path(__file__).resolve().parent.parent
+    / "_data"
+    / "publications.yml"
+)
+
+
+# ============================================================
+# HTTP SETTINGS
+# ============================================================
+
 HEADERS = {
     "Accept": "application/json",
-    "User-Agent": "VanharaLab-publications/1.0"
+    "User-Agent": (
+        "VanharaLab-publications/1.0 "
+        "(https://vanharalab.github.io/)"
+    )
 }
 
+PUBMED_HEADERS = {
+    "Accept": "application/xml",
+    "User-Agent": (
+        "VanharaLab-publications/1.0 "
+        "(https://vanharalab.github.io/)"
+    )
+}
+
+SESSION = requests.Session()
+
+
+# PubMed limituje počet požadavků.
+# Proto mezi nimi čekáme.
+PUBMED_DELAY = 1.0
+
+# Počet pokusů při 429 / 5xx
+MAX_RETRIES = 5
+
 
 # ============================================================
-# HELPERS
+# HTTP HELPER
 # ============================================================
 
-def clean_doi(doi):
-    """Normalize DOI without changing its identity."""
+def request_with_retry(
+    url,
+    *,
+    params=None,
+    headers=None,
+    timeout=30,
+    retries=MAX_RETRIES,
+    delay=1.0
+):
+    """
+    HTTP GET s retry.
+    Zvlášť řeší 429 Too Many Requests.
+    """
 
-    if not doi:
-        return ""
+    for attempt in range(1, retries + 1):
 
-    doi = doi.strip()
+        try:
 
-    doi = re.sub(
-        r"^https?://doi\.org/",
-        "",
-        doi,
-        flags=re.IGNORECASE
+            response = SESSION.get(
+                url,
+                params=params,
+                headers=headers,
+                timeout=timeout
+            )
+
+            # ------------------------------------------------
+            # OK
+            # ------------------------------------------------
+
+            if response.status_code == 200:
+                return response
+
+            # ------------------------------------------------
+            # Rate limit
+            # ------------------------------------------------
+
+            if response.status_code == 429:
+
+                retry_after = response.headers.get(
+                    "Retry-After"
+                )
+
+                if retry_after:
+                    try:
+                        wait = float(retry_after)
+                    except ValueError:
+                        wait = delay * attempt
+                else:
+                    wait = delay * attempt
+
+                print(
+                    f"  HTTP 429 - waiting {wait:.1f}s "
+                    f"(attempt {attempt}/{retries})"
+                )
+
+                time.sleep(wait)
+                continue
+
+            # ------------------------------------------------
+            # Server errors
+            # ------------------------------------------------
+
+            if response.status_code >= 500:
+
+                wait = delay * attempt
+
+                print(
+                    f"  HTTP {response.status_code} - "
+                    f"waiting {wait:.1f}s "
+                    f"(attempt {attempt}/{retries})"
+                )
+
+                time.sleep(wait)
+                continue
+
+            # ------------------------------------------------
+            # Other HTTP error
+            # ------------------------------------------------
+
+            response.raise_for_status()
+
+        except requests.RequestException as exc:
+
+            if attempt == retries:
+                raise
+
+            wait = delay * attempt
+
+            print(
+                f"  Network error: {exc}"
+            )
+
+            print(
+                f"  Retrying in {wait:.1f}s..."
+            )
+
+            time.sleep(wait)
+
+    raise RuntimeError(
+        f"Request failed after {retries} attempts: {url}"
     )
 
-    doi = re.sub(
-        r"^doi:\s*",
-        "",
-        doi,
-        flags=re.IGNORECASE
-    )
 
-    return doi.strip()
-
+# ============================================================
+# ORCID
+# ============================================================
 
 def get_orcid_works():
-    """Download publication list from ORCID."""
 
     print("Fetching publications from ORCID...")
 
-    response = requests.get(
+    response = request_with_retry(
         ORCID_URL,
         headers=HEADERS,
         timeout=30
     )
 
-    response.raise_for_status()
+    data = response.json()
 
-    return response.json()
+    print(
+        f"ORCID groups found: "
+        f"{len(data.get('group', []))}"
+    )
 
+    return data
+
+
+# ============================================================
+# DOI
+# ============================================================
 
 def get_doi(work):
-    """Extract DOI from an ORCID work."""
 
     external_ids = (
         work.get("external-ids", {})
@@ -97,138 +218,38 @@ def get_doi(work):
 
         if id_type == "doi":
 
-            value = external_id.get(
-                "external-id-value",
-                ""
+            doi = (
+                external_id
+                .get("external-id-value", "")
+                .strip()
             )
 
-            return clean_doi(value)
+            # Odstraníme případný URL prefix
+            doi = doi.replace(
+                "https://doi.org/",
+                ""
+            ).replace(
+                "http://doi.org/",
+                ""
+            ).strip()
+
+            return doi
 
     return ""
 
 
-def get_orcid_title(work):
-    return (
-        work.get("title", {})
-        .get("title", {})
-        .get("value", "")
-        .strip()
-    )
+# ============================================================
+# PUBMED - PMID
+# ============================================================
 
-
-def get_orcid_year(work):
-
-    publication_date = work.get(
-        "publication-date"
-    )
-
-    if not publication_date:
-        return ""
-
-    return (
-        publication_date
-        .get("year", {})
-        .get("value", "")
-    )
-
-
-def get_orcid_journal(work):
-
-    journal = work.get(
-        "journal-title"
-    )
-
-    if not journal:
-        return ""
-
-    return (
-        journal
-        .get("value", "")
-        .strip()
-    )
-
-
-def get_crossref_metadata(doi):
-    """Get bibliographic metadata from Crossref."""
+def get_pmid_from_pubmed(doi):
 
     if not doi:
-        return {}
+        return ""
 
-    print(f"  Crossref: {doi}")
-
-    url = CROSSREF_URL + doi
-
-    response = requests.get(
-        url,
-        headers=HEADERS,
-        timeout=30
+    print(
+        f"  PubMed search: {doi}"
     )
-
-    if response.status_code != 200:
-        print(
-            f"  WARNING: Crossref lookup failed: "
-            f"{response.status_code}"
-        )
-        return {}
-
-    return response.json().get(
-        "message",
-        {}
-    )
-
-
-def format_crossref_authors(metadata):
-    """Format Crossref authors as Surname Initials."""
-
-    authors = []
-
-    for author in metadata.get(
-        "author",
-        []
-    ):
-
-        family = author.get(
-            "family",
-            ""
-        ).strip()
-
-        given = author.get(
-            "given",
-            ""
-        ).strip()
-
-        if not family:
-            continue
-
-        initials = ""
-
-        for part in re.split(
-            r"[\s-]+",
-            given
-        ):
-
-            part = part.strip()
-
-            if part:
-                initials += part[0].upper()
-
-        if initials:
-            authors.append(
-                f"{family} {initials}"
-            )
-        else:
-            authors.append(
-                family
-            )
-
-    return ", ".join(authors)
-
-
-def get_pubmed_by_doi(doi):
-    """Find PubMed record using DOI."""
-
-    if not doi:
-        return None
 
     params = {
         "db": "pubmed",
@@ -237,64 +258,41 @@ def get_pubmed_by_doi(doi):
         "retmax": 1
     }
 
-    response = requests.get(
+    time.sleep(PUBMED_DELAY)
+
+    response = request_with_retry(
         PUBMED_ESEARCH_URL,
         params=params,
+        headers=HEADERS,
         timeout=30
     )
 
-    response.raise_for_status()
+    data = response.json()
 
     ids = (
-        response.json()
+        data
         .get("esearchresult", {})
         .get("idlist", [])
     )
 
-    if not ids:
-        return None
+    if ids:
+        return ids[0]
 
-    return ids[0]
+    return ""
 
 
-def get_pubmed_by_title(title):
-    """Fallback: find PubMed record using exact title."""
-
-    if not title:
-        return None
-
-    params = {
-        "db": "pubmed",
-        "term": f'"{title}"[Title]',
-        "retmode": "json",
-        "retmax": 1
-    }
-
-    response = requests.get(
-        PUBMED_ESEARCH_URL,
-        params=params,
-        timeout=30
-    )
-
-    response.raise_for_status()
-
-    ids = (
-        response.json()
-        .get("esearchresult", {})
-        .get("idlist", [])
-    )
-
-    if not ids:
-        return None
-
-    return ids[0]
-
+# ============================================================
+# PUBMED - METADATA
+# ============================================================
 
 def get_pubmed_metadata(pmid):
-    """Download full PubMed metadata."""
 
     if not pmid:
         return {}
+
+    print(
+        f"  PubMed fetch: {pmid}"
+    )
 
     params = {
         "db": "pubmed",
@@ -302,15 +300,16 @@ def get_pubmed_metadata(pmid):
         "retmode": "xml"
     }
 
-    response = requests.get(
+    # DŮLEŽITÉ:
+    # PubMed má rate limit.
+    time.sleep(PUBMED_DELAY)
+
+    response = request_with_retry(
         PUBMED_EFETCH_URL,
         params=params,
+        headers=PUBMED_HEADERS,
         timeout=30
     )
-
-    response.raise_for_status()
-
-    import xml.etree.ElementTree as ET
 
     root = ET.fromstring(
         response.text
@@ -330,35 +329,73 @@ def get_pubmed_metadata(pmid):
     if art is None:
         return {}
 
+    # --------------------------------------------------------
+    # Title
+    # --------------------------------------------------------
+
     title = art.findtext(
         "ArticleTitle",
         default=""
     )
+
+    # --------------------------------------------------------
+    # Journal
+    # --------------------------------------------------------
 
     journal = art.findtext(
         ".//Journal/Title",
         default=""
     )
 
+    # --------------------------------------------------------
+    # Year
+    # --------------------------------------------------------
+
     year = art.findtext(
         ".//PubDate/Year",
         default=""
     )
+
+    if not year:
+
+        medline_date = art.findtext(
+            ".//PubDate/MedlineDate",
+            default=""
+        )
+
+        if medline_date:
+            year = medline_date[:4]
+
+    # --------------------------------------------------------
+    # Volume
+    # --------------------------------------------------------
 
     volume = art.findtext(
         ".//JournalIssue/Volume",
         default=""
     )
 
+    # --------------------------------------------------------
+    # Issue
+    # --------------------------------------------------------
+
     issue = art.findtext(
         ".//JournalIssue/Issue",
         default=""
     )
 
+    # --------------------------------------------------------
+    # Pages
+    # --------------------------------------------------------
+
     pages = art.findtext(
         ".//Pagination/MedlinePgn",
         default=""
     )
+
+    # --------------------------------------------------------
+    # Authors
+    # --------------------------------------------------------
 
     authors = []
 
@@ -374,16 +411,15 @@ def get_pubmed_metadata(pmid):
             "Initials"
         )
 
-        if lastname:
+        if not lastname:
+            continue
 
-            name = lastname.strip()
+        name = lastname
 
-            if initials:
-                name += (
-                    f" {initials.strip()}"
-                )
+        if initials:
+            name += f" {initials}"
 
-            authors.append(name)
+        authors.append(name)
 
     return {
         "title": title,
@@ -392,33 +428,151 @@ def get_pubmed_metadata(pmid):
         "volume": volume,
         "issue": issue,
         "pages": pages,
-        "authors": ", ".join(authors),
-        "pmid": article.findtext(
-            ".//PMID",
-            default=pmid
-        )
+        "authors": ", ".join(authors)
     }
+
+
+# ============================================================
+# CROSSREF
+# ============================================================
+
+def get_crossref_metadata(doi):
+
+    if not doi:
+        return {}
+
+    print(
+        f"  Crossref: {doi}"
+    )
+
+    url = CROSSREF_URL + doi
+
+    try:
+
+        response = request_with_retry(
+            url,
+            headers=HEADERS,
+            timeout=30,
+            retries=3,
+            delay=2
+        )
+
+        return response.json().get(
+            "message",
+            {}
+        )
+
+    except Exception as exc:
+
+        print(
+            f"  WARNING: Crossref failed: {exc}"
+        )
+
+        return {}
+
+
+# ============================================================
+# AUTHORS FROM CROSSREF
+# ============================================================
+
+def format_crossref_authors(metadata):
+
+    authors = []
+
+    for author in metadata.get(
+        "author",
+        []
+    ):
+
+        family = (
+            author.get("family", "")
+            .strip()
+        )
+
+        given = (
+            author.get("given", "")
+            .strip()
+        )
+
+        if not family:
+            continue
+
+        initials = ""
+
+        for part in (
+            given
+            .replace("-", " ")
+            .split()
+        ):
+
+            if part:
+                initials += part[0].upper()
+
+        if initials:
+            authors.append(
+                f"{family} {initials}"
+            )
+        else:
+            authors.append(
+                family
+            )
+
+    return ", ".join(authors)
+
+
+# ============================================================
+# YEAR FROM CROSSREF
+# ============================================================
+
+def get_crossref_year(metadata):
+
+    for key in (
+        "published-print",
+        "published-online",
+        "published",
+        "issued"
+    ):
+
+        date = metadata.get(
+            key,
+            {}
+        )
+
+        parts = date.get(
+            "date-parts",
+            []
+        )
+
+        if parts and parts[0]:
+
+            year = parts[0][0]
+
+            if year:
+                return str(year)
+
+    return ""
 
 
 # ============================================================
 # MAIN
 # ============================================================
 
+print()
+print("=" * 60)
+print("VanharaLab publication updater")
+print("=" * 60)
+print()
+
+
 data = get_orcid_works()
-
-groups = data.get(
-    "group",
-    []
-)
-
-print(
-    f"ORCID works found: {len(groups)}"
-)
 
 publications = []
 
 
-for group in groups:
+for group in data.get(
+    "group",
+    []
+):
 
     summaries = group.get(
         "work-summary",
@@ -430,220 +584,224 @@ for group in groups:
 
     work = summaries[0]
 
-    orcid_title = get_orcid_title(
+    # --------------------------------------------------------
+    # ORCID basic metadata
+    # --------------------------------------------------------
+
+    title = (
         work
+        .get("title", {})
+        .get("title", {})
+        .get("value", "")
+        .strip()
     )
 
-    orcid_year = get_orcid_year(
-        work
+    year = ""
+
+    publication_date = work.get(
+        "publication-date"
     )
 
-    orcid_journal = get_orcid_journal(
-        work
-    )
+    if publication_date:
+
+        year = (
+            publication_date
+            .get("year", {})
+            .get("value", "")
+        )
+
+    journal = ""
+
+    if work.get(
+        "journal-title"
+    ):
+
+        journal = (
+            work["journal-title"]
+            .get("value", "")
+            .strip()
+        )
 
     doi = get_doi(work)
 
     print()
+    print("-" * 60)
     print(
-        f"Processing: {orcid_title}"
+        f"Processing: {title}"
     )
     print(
-        f"  DOI: {doi or '(none)'}"
+        f"  DOI: {doi or 'none'}"
     )
 
     # --------------------------------------------------------
-    # CROSSREF
+    # Crossref
     # --------------------------------------------------------
 
     crossref = get_crossref_metadata(
         doi
     )
 
-    crossref_title = ""
+    if crossref:
 
-    if crossref.get("title"):
         crossref_title = (
-            crossref["title"][0]
-            .strip()
+            crossref
+            .get("title", [""])[0]
         )
 
-    crossref_journal = ""
+        if crossref_title:
+            title = crossref_title
 
-    if crossref.get(
-        "container-title"
-    ):
+        if crossref.get(
+            "container-title"
+        ):
 
-        crossref_journal = (
-            crossref["container-title"][0]
-            .strip()
-        )
-
-    crossref_year = ""
-
-    published = crossref.get(
-        "published-print"
-    ) or crossref.get(
-        "published-online"
-    ) or crossref.get(
-        "issued"
-    )
-
-    if published:
-
-        date_parts = published.get(
-            "date-parts",
-            []
-        )
-
-        if date_parts and date_parts[0]:
-
-            crossref_year = str(
-                date_parts[0][0]
+            journal = (
+                crossref[
+                    "container-title"
+                ][0]
             )
 
-    authors = format_crossref_authors(
-        crossref
-    )
+        volume = crossref.get(
+            "volume",
+            ""
+        )
 
-    volume = crossref.get(
-        "volume",
-        ""
-    )
+        issue = crossref.get(
+            "issue",
+            ""
+        )
 
-    issue = crossref.get(
-        "issue",
-        ""
-    )
+        pages = (
+            crossref.get("page")
+            or crossref.get(
+                "article-number"
+            )
+            or ""
+        )
 
-    pages = (
-        crossref.get("page")
-        or crossref.get("article-number")
-        or ""
-    )
+        authors = (
+            format_crossref_authors(
+                crossref
+            )
+        )
+
+        crossref_year = (
+            get_crossref_year(
+                crossref
+            )
+        )
+
+        if crossref_year:
+            year = crossref_year
+
+    else:
+
+        volume = ""
+        issue = ""
+        pages = ""
+        authors = ""
 
     # --------------------------------------------------------
-    # PUBMED
+    # PubMed
     # --------------------------------------------------------
 
     pmid = ""
 
-    pubmed = {}
-
     if doi:
 
-        pmid = get_pubmed_by_doi(
-            doi
-        )
+        try:
 
-        if pmid:
-            print(
-                f"  PMID: {pmid}"
+            pmid = get_pmid_from_pubmed(
+                doi
             )
+
+        except Exception as exc:
+
+            print(
+                f"  WARNING: PubMed search failed: {exc}"
+            )
+
+    if pmid:
+
+        try:
 
             pubmed = get_pubmed_metadata(
                 pmid
             )
 
-        else:
+            # PubMed je autoritativnější pro
+            # bibliografická data, pokud je má.
+
+            if pubmed.get(
+                "title"
+            ):
+                title = pubmed["title"]
+
+            if pubmed.get(
+                "journal"
+            ):
+                journal = pubmed["journal"]
+
+            if pubmed.get(
+                "year"
+            ):
+                year = pubmed["year"]
+
+            if pubmed.get(
+                "volume"
+            ):
+                volume = pubmed["volume"]
+
+            if pubmed.get(
+                "issue"
+            ):
+                issue = pubmed["issue"]
+
+            if pubmed.get(
+                "pages"
+            ):
+                pages = pubmed["pages"]
+
+            if pubmed.get(
+                "authors"
+            ):
+                authors = pubmed["authors"]
+
+        except Exception as exc:
+
+            # ------------------------------------------------
+            # PUBMED ERROR NESMÍ ZASTAVIT CELÝ BUILD
+            # ------------------------------------------------
+
             print(
-                f"  PMID: not found"
+                f"  WARNING: PubMed metadata failed: {exc}"
             )
 
-    # If DOI is missing, try title search.
-    elif orcid_title:
-
-        print(
-            "  No DOI - searching PubMed by title"
-        )
-
-        pmid = get_pubmed_by_title(
-            orcid_title
-        )
-
-        if pmid:
-
             print(
-                f"  PMID: {pmid}"
-            )
-
-            pubmed = get_pubmed_metadata(
-                pmid
-            )
-
-        else:
-
-            print(
-                "  PMID: not found"
+                "  Continuing with ORCID/Crossref data."
             )
 
     # --------------------------------------------------------
-    # CHOOSE BEST METADATA
-    #
-    # Priority:
-    # PubMed → Crossref → ORCID
+    # Publication
     # --------------------------------------------------------
-
-    title = (
-        pubmed.get("title")
-        or crossref_title
-        or orcid_title
-    )
-
-    journal = (
-        pubmed.get("journal")
-        or crossref_journal
-        or orcid_journal
-    )
-
-    year = (
-        pubmed.get("year")
-        or crossref_year
-        or orcid_year
-    )
-
-    final_authors = (
-        pubmed.get("authors")
-        or authors
-    )
-
-    final_volume = (
-        pubmed.get("volume")
-        or volume
-    )
-
-    final_issue = (
-        pubmed.get("issue")
-        or issue
-    )
-
-    final_pages = (
-        pubmed.get("pages")
-        or pages
-    )
-
-    publication = {
-        "year": str(year),
-        "title": title,
-        "authors": final_authors,
-        "journal": journal,
-        "volume": final_volume,
-        "issue": final_issue,
-        "pages": final_pages,
-        "doi": doi,
-        "pmid": pmid or ""
-    }
 
     publications.append(
-        publication
+        {
+            "year": str(year),
+            "title": title,
+            "authors": authors,
+            "journal": journal,
+            "volume": volume,
+            "issue": issue,
+            "pages": pages,
+            "doi": doi,
+            "pmid": pmid
+        }
     )
 
     print(
         f"  OK: {title}"
     )
-
-    # Avoid hammering APIs
-    time.sleep(0.2)
 
 
 # ============================================================
@@ -654,12 +812,15 @@ unique = {}
 
 for publication in publications:
 
-    doi = clean_doi(
-        publication.get(
-            "doi",
-            ""
-        )
-    )
+    doi = publication.get(
+        "doi",
+        ""
+    ).strip()
+
+    title = publication.get(
+        "title",
+        ""
+    ).strip()
 
     if doi:
 
@@ -670,14 +831,9 @@ for publication in publications:
 
     else:
 
-        title = publication.get(
-            "title",
-            ""
-        ).strip().lower()
-
         key = (
             "title:"
-            + title
+            + title.lower()
         )
 
     unique[key] = publication
@@ -692,23 +848,12 @@ publications = list(
 # SORT
 # ============================================================
 
-def year_key(publication):
-
-    try:
-        return int(
-            publication.get(
-                "year",
-                ""
-            )
-        )
-
-    except (ValueError, TypeError):
-
-        return 0
-
-
 publications.sort(
-    key=year_key,
+    key=lambda x: (
+        int(x["year"])
+        if str(x["year"]).isdigit()
+        else 0
+    ),
     reverse=True
 )
 
@@ -717,31 +862,18 @@ publications.sort(
 # SAVE
 # ============================================================
 
-base_dir = (
-    Path(__file__)
-    .resolve()
-    .parent
-    .parent
-)
-
-output = (
-    base_dir
-    / "_data"
-    / "publications.yml"
-)
-
-output.parent.mkdir(
+OUTPUT.parent.mkdir(
     parents=True,
     exist_ok=True
 )
 
 with open(
-    output,
+    OUTPUT,
     "w",
     encoding="utf-8"
 ) as file:
 
-    yaml.dump(
+    yaml.safe_dump(
         publications,
         file,
         allow_unicode=True,
@@ -750,46 +882,12 @@ with open(
     )
 
 
-# ============================================================
-# SUMMARY
-# ============================================================
-
 print()
 print("=" * 60)
 print(
     f"Updated {len(publications)} publications"
 )
 print(
-    f"Saved to: {output}"
+    f"Saved to: {OUTPUT}"
 )
 print("=" * 60)
-
-doi_count = sum(
-    1
-    for p in publications
-    if p.get("doi")
-)
-
-pmid_count = sum(
-    1
-    for p in publications
-    if p.get("pmid")
-)
-
-author_count = sum(
-    1
-    for p in publications
-    if p.get("authors")
-)
-
-print(
-    f"With DOI:     {doi_count}"
-)
-
-print(
-    f"With PMID:    {pmid_count}"
-)
-
-print(
-    f"With authors: {author_count}"
-)
