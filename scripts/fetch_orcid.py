@@ -1,9 +1,14 @@
 from pathlib import Path
+import re
+import time
 
 import requests
 import yaml
-import xml.etree.ElementTree as ET
 
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
 ORCID_ID = "0000-0002-7470-177X"
 
@@ -20,66 +25,61 @@ PUBMED_EFETCH_URL = (
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 )
 
+CROSSREF_URL = "https://api.crossref.org/works/"
+
 HEADERS = {
-    "Accept": "application/json"
+    "Accept": "application/json",
+    "User-Agent": "VanharaLab-publications/1.0"
 }
 
 
-# --------------------------------------------------
-# ORCID
-# --------------------------------------------------
+# ============================================================
+# HELPERS
+# ============================================================
 
-print("Fetching publications from ORCID...")
+def clean_doi(doi):
+    """Normalize DOI without changing its identity."""
 
-response = requests.get(
-    ORCID_URL,
-    headers=HEADERS,
-    timeout=30
-)
+    if not doi:
+        return ""
 
-response.raise_for_status()
+    doi = doi.strip()
 
-data = response.json()
-
-orcid_publications = []
-
-for group in data.get("group", []):
-
-    summaries = group.get("work-summary", [])
-
-    if not summaries:
-        continue
-
-    work = summaries[0]
-
-    title = (
-        work.get("title", {})
-        .get("title", {})
-        .get("value", "")
-        .strip()
+    doi = re.sub(
+        r"^https?://doi\.org/",
+        "",
+        doi,
+        flags=re.IGNORECASE
     )
 
-    year = ""
+    doi = re.sub(
+        r"^doi:\s*",
+        "",
+        doi,
+        flags=re.IGNORECASE
+    )
 
-    publication_date = work.get("publication-date")
+    return doi.strip()
 
-    if publication_date:
-        year = (
-            publication_date
-            .get("year", {})
-            .get("value", "")
-        )
 
-    journal = ""
+def get_orcid_works():
+    """Download publication list from ORCID."""
 
-    if work.get("journal-title"):
-        journal = (
-            work["journal-title"]
-            .get("value", "")
-            .strip()
-        )
+    print("Fetching publications from ORCID...")
 
-    doi = ""
+    response = requests.get(
+        ORCID_URL,
+        headers=HEADERS,
+        timeout=30
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+def get_doi(work):
+    """Extract DOI from an ORCID work."""
 
     external_ids = (
         work.get("external-ids", {})
@@ -88,74 +88,149 @@ for group in data.get("group", []):
 
     for external_id in external_ids:
 
-        if (
-            external_id.get("external-id-type", "").lower()
-            == "doi"
-        ):
-            doi = (
-                external_id
-                .get("external-id-value", "")
-                .strip()
-            )
-            break
+        id_type = (
+            external_id
+            .get("external-id-type", "")
+            .lower()
+            .strip()
+        )
 
-    orcid_publications.append(
-        {
-            "title": title,
-            "year": year,
-            "journal": journal,
-            "doi": doi
-        }
+        if id_type == "doi":
+
+            value = external_id.get(
+                "external-id-value",
+                ""
+            )
+
+            return clean_doi(value)
+
+    return ""
+
+
+def get_orcid_title(work):
+    return (
+        work.get("title", {})
+        .get("title", {})
+        .get("value", "")
+        .strip()
     )
 
 
-print(
-    f"ORCID works found: {len(orcid_publications)}"
-)
+def get_orcid_year(work):
+
+    publication_date = work.get(
+        "publication-date"
+    )
+
+    if not publication_date:
+        return ""
+
+    return (
+        publication_date
+        .get("year", {})
+        .get("value", "")
+    )
 
 
-# --------------------------------------------------
-# PubMed
-# --------------------------------------------------
+def get_orcid_journal(work):
 
-publications = []
+    journal = work.get(
+        "journal-title"
+    )
 
-for item in orcid_publications:
+    if not journal:
+        return ""
 
-    doi = item["doi"]
+    return (
+        journal
+        .get("value", "")
+        .strip()
+    )
 
-    # Publikace bez DOI ponecháme.
+
+def get_crossref_metadata(doi):
+    """Get bibliographic metadata from Crossref."""
+
     if not doi:
+        return {}
 
+    print(f"  Crossref: {doi}")
+
+    url = CROSSREF_URL + doi
+
+    response = requests.get(
+        url,
+        headers=HEADERS,
+        timeout=30
+    )
+
+    if response.status_code != 200:
         print(
-            f"WARNING: no DOI: {item['title']}"
+            f"  WARNING: Crossref lookup failed: "
+            f"{response.status_code}"
         )
+        return {}
 
-        publications.append(
-            {
-                "year": item["year"],
-                "title": item["title"],
-                "authors": "",
-                "journal": item["journal"],
-                "volume": "",
-                "issue": "",
-                "pages": "",
-                "doi": "",
-                "pmid": ""
-            }
-        )
-
-        continue
+    return response.json().get(
+        "message",
+        {}
+    )
 
 
-    print(f"Looking up DOI: {doi}")
+def format_crossref_authors(metadata):
+    """Format Crossref authors as Surname Initials."""
+
+    authors = []
+
+    for author in metadata.get(
+        "author",
+        []
+    ):
+
+        family = author.get(
+            "family",
+            ""
+        ).strip()
+
+        given = author.get(
+            "given",
+            ""
+        ).strip()
+
+        if not family:
+            continue
+
+        initials = ""
+
+        for part in re.split(
+            r"[\s-]+",
+            given
+        ):
+
+            part = part.strip()
+
+            if part:
+                initials += part[0].upper()
+
+        if initials:
+            authors.append(
+                f"{family} {initials}"
+            )
+        else:
+            authors.append(
+                family
+            )
+
+    return ", ".join(authors)
 
 
-    # --------------------------------------------------
-    # Najít PMID podle DOI
-    # --------------------------------------------------
+def get_pubmed_by_doi(doi):
+    """Find PubMed record using DOI."""
 
-    search_params = {
+    if not doi:
+        return None
+
+    params = {
         "db": "pubmed",
         "term": f'"{doi}"[doi]',
         "retmode": "json",
@@ -164,54 +239,64 @@ for item in orcid_publications:
 
     response = requests.get(
         PUBMED_ESEARCH_URL,
-        params=search_params,
+        params=params,
         timeout=30
     )
 
     response.raise_for_status()
 
-    pmids = (
+    ids = (
         response.json()
         .get("esearchresult", {})
         .get("idlist", [])
     )
 
+    if not ids:
+        return None
 
-    # --------------------------------------------------
-    # DOI není v PubMedu
-    # --------------------------------------------------
-
-    if not pmids:
-
-        print(
-            f"  PMID not found: {doi}"
-        )
-
-        publications.append(
-            {
-                "year": item["year"],
-                "title": item["title"],
-                "authors": "",
-                "journal": item["journal"],
-                "volume": "",
-                "issue": "",
-                "pages": "",
-                "doi": doi,
-                "pmid": ""
-            }
-        )
-
-        continue
+    return ids[0]
 
 
-    pmid = pmids[0]
+def get_pubmed_by_title(title):
+    """Fallback: find PubMed record using exact title."""
+
+    if not title:
+        return None
+
+    params = {
+        "db": "pubmed",
+        "term": f'"{title}"[Title]',
+        "retmode": "json",
+        "retmax": 1
+    }
+
+    response = requests.get(
+        PUBMED_ESEARCH_URL,
+        params=params,
+        timeout=30
+    )
+
+    response.raise_for_status()
+
+    ids = (
+        response.json()
+        .get("esearchresult", {})
+        .get("idlist", [])
+    )
+
+    if not ids:
+        return None
+
+    return ids[0]
 
 
-    # --------------------------------------------------
-    # Stáhnout PubMed XML
-    # --------------------------------------------------
+def get_pubmed_metadata(pmid):
+    """Download full PubMed metadata."""
 
-    fetch_params = {
+    if not pmid:
+        return {}
+
+    params = {
         "db": "pubmed",
         "id": pmid,
         "retmode": "xml"
@@ -219,161 +304,436 @@ for item in orcid_publications:
 
     response = requests.get(
         PUBMED_EFETCH_URL,
-        params=fetch_params,
+        params=params,
         timeout=30
     )
 
     response.raise_for_status()
 
-    root = ET.fromstring(response.text)
+    import xml.etree.ElementTree as ET
 
-    article = root.find(".//PubmedArticle")
+    root = ET.fromstring(
+        response.text
+    )
+
+    article = root.find(
+        ".//PubmedArticle"
+    )
 
     if article is None:
+        return {}
 
-        print(
-            f"  WARNING: PubMed article not found: {pmid}"
-        )
-
-        continue
-
-
-    art = article.find(".//Article")
+    art = article.find(
+        ".//Article"
+    )
 
     if art is None:
-        continue
-
-
-    # --------------------------------------------------
-    # Title
-    # --------------------------------------------------
+        return {}
 
     title = art.findtext(
         "ArticleTitle",
-        default=item["title"]
+        default=""
     )
-
-
-    # --------------------------------------------------
-    # Journal
-    # --------------------------------------------------
 
     journal = art.findtext(
         ".//Journal/Title",
-        default=item["journal"]
+        default=""
     )
-
-
-    # --------------------------------------------------
-    # Year
-    # --------------------------------------------------
 
     year = art.findtext(
         ".//PubDate/Year",
-        default=item["year"]
+        default=""
     )
-
-
-    # --------------------------------------------------
-    # Volume
-    # --------------------------------------------------
 
     volume = art.findtext(
         ".//JournalIssue/Volume",
         default=""
     )
 
-
-    # --------------------------------------------------
-    # Issue
-    # --------------------------------------------------
-
     issue = art.findtext(
         ".//JournalIssue/Issue",
         default=""
     )
-
-
-    # --------------------------------------------------
-    # Pages
-    # --------------------------------------------------
 
     pages = art.findtext(
         ".//Pagination/MedlinePgn",
         default=""
     )
 
-
-    # --------------------------------------------------
-    # Authors
-    # --------------------------------------------------
-
     authors = []
 
-    for author in art.findall(".//Author"):
+    for author in art.findall(
+        ".//Author"
+    ):
 
-        lastname = author.findtext("LastName")
-        initials = author.findtext("Initials")
+        lastname = author.findtext(
+            "LastName"
+        )
+
+        initials = author.findtext(
+            "Initials"
+        )
 
         if lastname:
 
-            name = lastname
+            name = lastname.strip()
 
             if initials:
-                name += f" {initials}"
+                name += (
+                    f" {initials.strip()}"
+                )
 
             authors.append(name)
 
+    return {
+        "title": title,
+        "journal": journal,
+        "year": year,
+        "volume": volume,
+        "issue": issue,
+        "pages": pages,
+        "authors": ", ".join(authors),
+        "pmid": article.findtext(
+            ".//PMID",
+            default=pmid
+        )
+    }
 
-    # --------------------------------------------------
-    # PMID
-    # --------------------------------------------------
 
-    pubmed_id = article.findtext(
-        ".//PMID",
-        default=pmid
+# ============================================================
+# MAIN
+# ============================================================
+
+data = get_orcid_works()
+
+groups = data.get(
+    "group",
+    []
+)
+
+print(
+    f"ORCID works found: {len(groups)}"
+)
+
+publications = []
+
+
+for group in groups:
+
+    summaries = group.get(
+        "work-summary",
+        []
     )
 
+    if not summaries:
+        continue
+
+    work = summaries[0]
+
+    orcid_title = get_orcid_title(
+        work
+    )
+
+    orcid_year = get_orcid_year(
+        work
+    )
+
+    orcid_journal = get_orcid_journal(
+        work
+    )
+
+    doi = get_doi(work)
+
+    print()
+    print(
+        f"Processing: {orcid_title}"
+    )
+    print(
+        f"  DOI: {doi or '(none)'}"
+    )
+
+    # --------------------------------------------------------
+    # CROSSREF
+    # --------------------------------------------------------
+
+    crossref = get_crossref_metadata(
+        doi
+    )
+
+    crossref_title = ""
+
+    if crossref.get("title"):
+        crossref_title = (
+            crossref["title"][0]
+            .strip()
+        )
+
+    crossref_journal = ""
+
+    if crossref.get(
+        "container-title"
+    ):
+
+        crossref_journal = (
+            crossref["container-title"][0]
+            .strip()
+        )
+
+    crossref_year = ""
+
+    published = crossref.get(
+        "published-print"
+    ) or crossref.get(
+        "published-online"
+    ) or crossref.get(
+        "issued"
+    )
+
+    if published:
+
+        date_parts = published.get(
+            "date-parts",
+            []
+        )
+
+        if date_parts and date_parts[0]:
+
+            crossref_year = str(
+                date_parts[0][0]
+            )
+
+    authors = format_crossref_authors(
+        crossref
+    )
+
+    volume = crossref.get(
+        "volume",
+        ""
+    )
+
+    issue = crossref.get(
+        "issue",
+        ""
+    )
+
+    pages = (
+        crossref.get("page")
+        or crossref.get("article-number")
+        or ""
+    )
+
+    # --------------------------------------------------------
+    # PUBMED
+    # --------------------------------------------------------
+
+    pmid = ""
+
+    pubmed = {}
+
+    if doi:
+
+        pmid = get_pubmed_by_doi(
+            doi
+        )
+
+        if pmid:
+            print(
+                f"  PMID: {pmid}"
+            )
+
+            pubmed = get_pubmed_metadata(
+                pmid
+            )
+
+        else:
+            print(
+                f"  PMID: not found"
+            )
+
+    # If DOI is missing, try title search.
+    elif orcid_title:
+
+        print(
+            "  No DOI - searching PubMed by title"
+        )
+
+        pmid = get_pubmed_by_title(
+            orcid_title
+        )
+
+        if pmid:
+
+            print(
+                f"  PMID: {pmid}"
+            )
+
+            pubmed = get_pubmed_metadata(
+                pmid
+            )
+
+        else:
+
+            print(
+                "  PMID: not found"
+            )
+
+    # --------------------------------------------------------
+    # CHOOSE BEST METADATA
+    #
+    # Priority:
+    # PubMed → Crossref → ORCID
+    # --------------------------------------------------------
+
+    title = (
+        pubmed.get("title")
+        or crossref_title
+        or orcid_title
+    )
+
+    journal = (
+        pubmed.get("journal")
+        or crossref_journal
+        or orcid_journal
+    )
+
+    year = (
+        pubmed.get("year")
+        or crossref_year
+        or orcid_year
+    )
+
+    final_authors = (
+        pubmed.get("authors")
+        or authors
+    )
+
+    final_volume = (
+        pubmed.get("volume")
+        or volume
+    )
+
+    final_issue = (
+        pubmed.get("issue")
+        or issue
+    )
+
+    final_pages = (
+        pubmed.get("pages")
+        or pages
+    )
+
+    publication = {
+        "year": str(year),
+        "title": title,
+        "authors": final_authors,
+        "journal": journal,
+        "volume": final_volume,
+        "issue": final_issue,
+        "pages": final_pages,
+        "doi": doi,
+        "pmid": pmid or ""
+    }
 
     publications.append(
-        {
-            "year": year,
-            "title": title,
-            "authors": ", ".join(authors),
-            "journal": journal,
-            "volume": volume,
-            "issue": issue,
-            "pages": pages,
-            "doi": doi,
-            "pmid": pubmed_id
-        }
+        publication
     )
-
 
     print(
         f"  OK: {title}"
     )
 
+    # Avoid hammering APIs
+    time.sleep(0.2)
 
-# --------------------------------------------------
-# Řazení
-# --------------------------------------------------
+
+# ============================================================
+# REMOVE DUPLICATES
+# ============================================================
+
+unique = {}
+
+for publication in publications:
+
+    doi = clean_doi(
+        publication.get(
+            "doi",
+            ""
+        )
+    )
+
+    if doi:
+
+        key = (
+            "doi:"
+            + doi.lower()
+        )
+
+    else:
+
+        title = publication.get(
+            "title",
+            ""
+        ).strip().lower()
+
+        key = (
+            "title:"
+            + title
+        )
+
+    unique[key] = publication
+
+
+publications = list(
+    unique.values()
+)
+
+
+# ============================================================
+# SORT
+# ============================================================
+
+def year_key(publication):
+
+    try:
+        return int(
+            publication.get(
+                "year",
+                ""
+            )
+        )
+
+    except (ValueError, TypeError):
+
+        return 0
+
 
 publications.sort(
-    key=lambda x: int(x["year"])
-    if x["year"]
-    else 0,
+    key=year_key,
     reverse=True
 )
 
 
-# --------------------------------------------------
-# Uložení
-# --------------------------------------------------
+# ============================================================
+# SAVE
+# ============================================================
 
-base_dir = Path(__file__).resolve().parent.parent
+base_dir = (
+    Path(__file__)
+    .resolve()
+    .parent
+    .parent
+)
 
-output = base_dir / "_data" / "publications.yml"
+output = (
+    base_dir
+    / "_data"
+    / "publications.yml"
+)
+
+output.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 with open(
     output,
@@ -385,14 +745,51 @@ with open(
         publications,
         file,
         allow_unicode=True,
-        sort_keys=False
+        sort_keys=False,
+        default_flow_style=False
     )
 
 
+# ============================================================
+# SUMMARY
+# ============================================================
+
 print()
+print("=" * 60)
 print(
-    f"Saved {len(publications)} publications"
+    f"Updated {len(publications)} publications"
 )
 print(
-    f"Output: {output}"
+    f"Saved to: {output}"
+)
+print("=" * 60)
+
+doi_count = sum(
+    1
+    for p in publications
+    if p.get("doi")
+)
+
+pmid_count = sum(
+    1
+    for p in publications
+    if p.get("pmid")
+)
+
+author_count = sum(
+    1
+    for p in publications
+    if p.get("authors")
+)
+
+print(
+    f"With DOI:     {doi_count}"
+)
+
+print(
+    f"With PMID:    {pmid_count}"
+)
+
+print(
+    f"With authors: {author_count}"
 )
