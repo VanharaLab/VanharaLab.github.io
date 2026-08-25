@@ -26,8 +26,10 @@ HEADERS = {
 
 
 # --------------------------------------------------
-# ORCID: seznam publikací + DOI
+# ORCID
 # --------------------------------------------------
+
+print("Fetching publications from ORCID...")
 
 response = requests.get(
     ORCID_URL,
@@ -40,7 +42,6 @@ response.raise_for_status()
 data = response.json()
 
 orcid_publications = []
-
 
 for group in data.get("group", []):
 
@@ -88,18 +89,14 @@ for group in data.get("group", []):
     for external_id in external_ids:
 
         if (
-            external_id
-            .get("external-id-type", "")
-            .lower()
+            external_id.get("external-id-type", "").lower()
             == "doi"
         ):
-
             doi = (
                 external_id
                 .get("external-id-value", "")
                 .strip()
             )
-
             break
 
     orcid_publications.append(
@@ -118,21 +115,45 @@ print(
 
 
 # --------------------------------------------------
-# PubMed: najdeme záznamy podle DOI
+# PubMed
 # --------------------------------------------------
 
 publications = []
-
 
 for item in orcid_publications:
 
     doi = item["doi"]
 
+    # Publikace bez DOI ponecháme.
     if not doi:
+
         print(
             f"WARNING: no DOI: {item['title']}"
         )
+
+        publications.append(
+            {
+                "year": item["year"],
+                "title": item["title"],
+                "authors": "",
+                "journal": item["journal"],
+                "volume": "",
+                "issue": "",
+                "pages": "",
+                "doi": "",
+                "pmid": ""
+            }
+        )
+
         continue
+
+
+    print(f"Looking up DOI: {doi}")
+
+
+    # --------------------------------------------------
+    # Najít PMID podle DOI
+    # --------------------------------------------------
 
     search_params = {
         "db": "pubmed",
@@ -155,13 +176,17 @@ for item in orcid_publications:
         .get("idlist", [])
     )
 
+
+    # --------------------------------------------------
+    # DOI není v PubMedu
+    # --------------------------------------------------
+
     if not pmids:
 
         print(
-            f"WARNING: PMID not found for DOI {doi}"
+            f"  PMID not found: {doi}"
         )
 
-        # Zachováme publikaci i když není v PubMedu.
         publications.append(
             {
                 "year": item["year"],
@@ -180,6 +205,11 @@ for item in orcid_publications:
 
 
     pmid = pmids[0]
+
+
+    # --------------------------------------------------
+    # Stáhnout PubMed XML
+    # --------------------------------------------------
 
     fetch_params = {
         "db": "pubmed",
@@ -200,7 +230,13 @@ for item in orcid_publications:
     article = root.find(".//PubmedArticle")
 
     if article is None:
+
+        print(
+            f"  WARNING: PubMed article not found: {pmid}"
+        )
+
         continue
+
 
     art = article.find(".//Article")
 
@@ -313,14 +349,9 @@ for item in orcid_publications:
         }
     )
 
+
     print(
-        f"{year} | {title}"
-    )
-    print(
-        f"  DOI:  {doi}"
-    )
-    print(
-        f"  PMID: {pubmed_id}"
+        f"  OK: {title}"
     )
 
 
@@ -365,249 +396,3 @@ print(
 print(
     f"Output: {output}"
 )
-def get_doi(work):
-    external_ids = (
-        work.get("external-ids", {})
-        .get("external-id", [])
-    )
-
-    for external_id in external_ids:
-        if (
-            external_id
-            .get("external-id-type", "")
-            .lower()
-            == "doi"
-        ):
-            return (
-                external_id
-                .get("external-id-value", "")
-                .strip()
-            )
-
-    return ""
-
-
-def get_pmid_from_pubmed(doi):
-    if not doi:
-        return ""
-
-    params = {
-        "db": "pubmed",
-        "term": f'"{doi}"[doi]',
-        "retmode": "json",
-        "retmax": 1
-    }
-
-    response = requests.get(
-        PUBMED_SEARCH_URL,
-        params=params,
-        timeout=30
-    )
-
-    response.raise_for_status()
-
-    ids = (
-        response.json()
-        .get("esearchresult", {})
-        .get("idlist", [])
-    )
-
-    return ids[0] if ids else ""
-
-
-def get_crossref_metadata(doi):
-    if not doi:
-        return {}
-
-    url = CROSSREF_URL + doi
-
-    response = requests.get(
-        url,
-        timeout=30
-    )
-
-    if response.status_code != 200:
-        print(
-            f"Crossref lookup failed for DOI: {doi}"
-        )
-        return {}
-
-    return response.json().get("message", {})
-
-
-def format_authors(metadata):
-    authors = []
-
-    for author in metadata.get("author", []):
-        family = author.get("family", "")
-        given = author.get("given", "")
-
-        if not family:
-            continue
-
-        # Initials from given name
-        initials = ""
-
-        for part in given.replace("-", " ").split():
-            if part:
-                initials += part[0].upper()
-
-        if initials:
-            authors.append(
-                f"{family} {initials}"
-            )
-        else:
-            authors.append(family)
-
-    return ", ".join(authors)
-
-
-data = get_orcid_works()
-
-publications = []
-
-
-for group in data.get("group", []):
-
-    summaries = group.get("work-summary", [])
-
-    if not summaries:
-        continue
-
-    work = summaries[0]
-
-    title = (
-        work.get("title", {})
-        .get("title", {})
-        .get("value", "")
-        .strip()
-    )
-
-    year = ""
-
-    publication_date = work.get("publication-date")
-
-    if publication_date:
-        year = (
-            publication_date
-            .get("year", {})
-            .get("value", "")
-        )
-
-    doi = get_doi(work)
-
-    # --------------------------------------------------
-    # Crossref metadata
-    # --------------------------------------------------
-
-    metadata = get_crossref_metadata(doi)
-
-    journal = ""
-
-    if metadata.get("container-title"):
-        journal = metadata["container-title"][0]
-
-    volume = metadata.get("volume", "")
-    issue = metadata.get("issue", "")
-
-    pages = (
-        metadata.get("page")
-        or metadata.get("article-number")
-        or ""
-    )
-
-    authors = format_authors(metadata)
-
-    # --------------------------------------------------
-    # Pokud Crossref nemá název, použijeme ORCID
-    # --------------------------------------------------
-
-    if metadata.get("title"):
-        crossref_title = metadata["title"][0]
-
-        if crossref_title:
-            title = crossref_title
-
-    # --------------------------------------------------
-    # PMID
-    # --------------------------------------------------
-
-    pmid = get_pmid_from_pubmed(doi)
-
-    publication = {
-        "year": year,
-        "title": title,
-        "authors": authors,
-        "journal": journal,
-        "volume": volume,
-        "issue": issue,
-        "pages": pages,
-        "doi": doi,
-        "pmid": pmid
-    }
-
-    publications.append(publication)
-
-    print(
-        f"{year} | {title} | DOI: {doi} | PMID: {pmid}"
-    )
-
-
-# --------------------------------------------------
-# Odstranění duplicit
-# --------------------------------------------------
-
-unique = {}
-
-for publication in publications:
-
-    doi = publication["doi"]
-
-    if doi:
-        key = doi.lower()
-    else:
-        key = publication["title"].lower()
-
-    unique[key] = publication
-
-
-publications = list(unique.values())
-
-
-# --------------------------------------------------
-# Řazení
-# --------------------------------------------------
-
-publications.sort(
-    key=lambda x: int(x["year"])
-    if x["year"]
-    else 0,
-    reverse=True
-)
-
-
-# --------------------------------------------------
-# Uložení
-# --------------------------------------------------
-
-base_dir = Path(__file__).resolve().parent.parent
-
-output = base_dir / "_data" / "publications.yml"
-
-with open(
-    output,
-    "w",
-    encoding="utf-8"
-) as file:
-
-    yaml.dump(
-        publications,
-        file,
-        allow_unicode=True,
-        sort_keys=False
-    )
-
-
-print()
-print(f"Updated {len(publications)} publications")
-print(f"Saved to: {output}")
