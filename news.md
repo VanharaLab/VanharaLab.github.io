@@ -3,7 +3,7 @@ layout: page
 title: News
 ---
 <b>August 2026: New paper published! </b>  
-  We were happy to contribute to an excellent paper by Katarina Cimborova, published in Materials and Design: [Lost cells, retained structure: proteomic mapping of decellularized lung matrisome across species](https://www.sciencedirect.com/science/article/pii/S0264127526013985?via%3Dihub)    
+  We were very happy to contribute to an excellent paper by Katarina Cimborova, published in Materials and Design: [Lost cells, retained structure: proteomic mapping of decellularized lung matrisome across species](https://www.sciencedirect.com/science/article/pii/S0264127526013985?via%3Dihub)    
 This work identifies changes in proteome of human, mouse and pig lung extracellular matrix, and contributes to development of better near-to-native lung models.  
 <hr>
 
