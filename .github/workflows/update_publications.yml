@@ -1,4 +1,4 @@
-name: Update PubMed publications
+name: Update ORCID publications
 
 on:
   schedule:
@@ -25,14 +25,16 @@ jobs:
         run: |
           pip install requests pyyaml
 
-      - name: Fetch PubMed publications
+      - name: Fetch ORCID publications
         run: |
-          python scripts/fetch_pubmed.py
+          python scripts/fetch_orcid.py
 
       - name: Verify generated publications
         run: |
-          ls -la _data
-          head -30 _data/publications.yml
+          echo "Generated publications:"
+          cat _data/publications.yml
+          echo ""
+          echo "Git status:"
           git status
 
       - name: Commit updated publications
@@ -44,6 +46,6 @@ jobs:
 
           git diff --cached --quiet && exit 0
 
-          git commit -m "Update PubMed publications"
+          git commit -m "Update ORCID publications"
 
           git push
