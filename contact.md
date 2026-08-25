@@ -15,7 +15,7 @@ Research Group "Tissue plasticity and regeneration"
 
 
 
-📍 Kamenice 126/3, 625 00 Brno, Czech Republic  
+📍 Building F0B1, Kamenice 126/3, 625 00 Brno, Czech Republic  
 
 📞 +420 549 497 780 ✉️ [pvanhara@med.muni.cz](mailto: pvanhara@med.muni.cz)  
 🌍 [https://www.muni.cz/en/people/43385-petr-vanhara](https://www.muni.cz/en/people/43385-petr-vanhara)
