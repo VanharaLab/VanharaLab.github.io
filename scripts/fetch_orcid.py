@@ -15,25 +15,124 @@ PUBMED_SEARCH_URL = (
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 )
 
+CROSSREF_URL = "https://api.crossref.org/works/"
+
 
 HEADERS = {
     "Accept": "application/json"
 }
 
 
-# --------------------------------------------------
-# ORCID
-# --------------------------------------------------
+def get_orcid_works():
+    response = requests.get(
+        ORCID_URL,
+        headers=HEADERS,
+        timeout=30
+    )
 
-response = requests.get(
-    ORCID_URL,
-    headers=HEADERS,
-    timeout=30
-)
+    response.raise_for_status()
 
-response.raise_for_status()
+    return response.json()
 
-data = response.json()
+
+def get_doi(work):
+    external_ids = (
+        work.get("external-ids", {})
+        .get("external-id", [])
+    )
+
+    for external_id in external_ids:
+        if (
+            external_id
+            .get("external-id-type", "")
+            .lower()
+            == "doi"
+        ):
+            return (
+                external_id
+                .get("external-id-value", "")
+                .strip()
+            )
+
+    return ""
+
+
+def get_pmid_from_pubmed(doi):
+    if not doi:
+        return ""
+
+    params = {
+        "db": "pubmed",
+        "term": f'"{doi}"[doi]',
+        "retmode": "json",
+        "retmax": 1
+    }
+
+    response = requests.get(
+        PUBMED_SEARCH_URL,
+        params=params,
+        timeout=30
+    )
+
+    response.raise_for_status()
+
+    ids = (
+        response.json()
+        .get("esearchresult", {})
+        .get("idlist", [])
+    )
+
+    return ids[0] if ids else ""
+
+
+def get_crossref_metadata(doi):
+    if not doi:
+        return {}
+
+    url = CROSSREF_URL + doi
+
+    response = requests.get(
+        url,
+        timeout=30
+    )
+
+    if response.status_code != 200:
+        print(
+            f"Crossref lookup failed for DOI: {doi}"
+        )
+        return {}
+
+    return response.json().get("message", {})
+
+
+def format_authors(metadata):
+    authors = []
+
+    for author in metadata.get("author", []):
+        family = author.get("family", "")
+        given = author.get("given", "")
+
+        if not family:
+            continue
+
+        # Initials from given name
+        initials = ""
+
+        for part in given.replace("-", " ").split():
+            if part:
+                initials += part[0].upper()
+
+        if initials:
+            authors.append(
+                f"{family} {initials}"
+            )
+        else:
+            authors.append(family)
+
+    return ", ".join(authors)
+
+
+data = get_orcid_works()
 
 publications = []
 
@@ -65,130 +164,63 @@ for group in data.get("group", []):
             .get("value", "")
         )
 
+    doi = get_doi(work)
+
+    # --------------------------------------------------
+    # Crossref metadata
+    # --------------------------------------------------
+
+    metadata = get_crossref_metadata(doi)
+
     journal = ""
 
-    if work.get("journal-title"):
-        journal = (
-            work["journal-title"]
-            .get("value", "")
-            .strip()
-        )
+    if metadata.get("container-title"):
+        journal = metadata["container-title"][0]
 
+    volume = metadata.get("volume", "")
+    issue = metadata.get("issue", "")
 
-    # --------------------------------------------------
-    # DOI z ORCID
-    # --------------------------------------------------
-
-    doi = ""
-
-    external_ids = (
-        work.get("external-ids", {})
-        .get("external-id", [])
+    pages = (
+        metadata.get("page")
+        or metadata.get("article-number")
+        or ""
     )
 
-    for external_id in external_ids:
-
-        id_type = (
-            external_id
-            .get("external-id-type", "")
-            .lower()
-        )
-
-        if id_type == "doi":
-
-            doi = (
-                external_id
-                .get("external-id-value", "")
-                .strip()
-            )
-
-            break
-
+    authors = format_authors(metadata)
 
     # --------------------------------------------------
-    # PMID z ORCID, pokud existuje
+    # Pokud Crossref nemá název, použijeme ORCID
     # --------------------------------------------------
 
-    pmid = ""
+    if metadata.get("title"):
+        crossref_title = metadata["title"][0]
 
-    for external_id in external_ids:
+        if crossref_title:
+            title = crossref_title
 
-        id_type = (
-            external_id
-            .get("external-id-type", "")
-            .lower()
-        )
+    # --------------------------------------------------
+    # PMID
+    # --------------------------------------------------
 
-        if id_type in ("pmid", "pubmed"):
+    pmid = get_pmid_from_pubmed(doi)
 
-            pmid = (
-                external_id
-                .get("external-id-value", "")
-                .strip()
-            )
-
-            break
-
-
-    publications.append(
-        {
-            "year": year,
-            "title": title,
-            "journal": journal,
-            "doi": doi,
-            "pmid": pmid
-        }
-    )
-
-
-# --------------------------------------------------
-# Pokud ORCID nemá PMID, najdeme ho podle DOI
-# --------------------------------------------------
-
-for publication in publications:
-
-    if publication["pmid"]:
-        continue
-
-    doi = publication["doi"]
-
-    if not doi:
-        continue
-
-    params = {
-        "db": "pubmed",
-        "term": f'"{doi}"[doi]',
-        "retmode": "json",
-        "retmax": 1
+    publication = {
+        "year": year,
+        "title": title,
+        "authors": authors,
+        "journal": journal,
+        "volume": volume,
+        "issue": issue,
+        "pages": pages,
+        "doi": doi,
+        "pmid": pmid
     }
 
-    try:
+    publications.append(publication)
 
-        response = requests.get(
-            PUBMED_SEARCH_URL,
-            params=params,
-            timeout=30
-        )
-
-        response.raise_for_status()
-
-        result = response.json()
-
-        ids = (
-            result
-            .get("esearchresult", {})
-            .get("idlist", [])
-        )
-
-        if ids:
-            publication["pmid"] = ids[0]
-
-    except requests.RequestException as error:
-
-        print(
-            f"PubMed lookup failed for DOI "
-            f"{doi}: {error}"
-        )
+    print(
+        f"{year} | {title} | DOI: {doi} | PMID: {pmid}"
+    )
 
 
 # --------------------------------------------------
@@ -213,18 +245,19 @@ publications = list(unique.values())
 
 
 # --------------------------------------------------
-# Řazení podle roku
+# Řazení
 # --------------------------------------------------
 
 publications.sort(
     key=lambda x: int(x["year"])
-    if x["year"] else 0,
+    if x["year"]
+    else 0,
     reverse=True
 )
 
 
 # --------------------------------------------------
-# Uložení YAML
+# Uložení
 # --------------------------------------------------
 
 base_dir = Path(__file__).resolve().parent.parent
@@ -245,8 +278,6 @@ with open(
     )
 
 
-print(
-    f"Updated {len(publications)} publications"
-)
-
+print()
+print(f"Updated {len(publications)} publications")
 print(f"Saved to: {output}")
