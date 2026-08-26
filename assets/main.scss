@@ -82,10 +82,25 @@ body {
   justify-content: space-between;
 }
 
+.footer-logos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .footer-logo {
-  width: 30px !important;
   height: auto !important;
+  margin: 0 !important;
+}
+
+.footer-logo:first-child {
+  width: 30px !important;
   max-width: 30px !important;
+}
+
+.footer-logo:last-child {
+  width: 50px !important;
+  max-width: 50px !important;
 }
 
 
