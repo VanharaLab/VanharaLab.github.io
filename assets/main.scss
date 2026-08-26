@@ -123,8 +123,9 @@ html, body {
     display: inline-block;
     margin: 0.3rem 0.8rem 0.3rem 0;
   }
-  .footer-content img {
-  width: 30px;
-  height: auto;
+.footer-content img {
+  width: 25px !important;
+  height: auto !important;
+  max-width: 25px !important;
 }
 }
