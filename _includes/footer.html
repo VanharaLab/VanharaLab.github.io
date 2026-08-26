@@ -1,11 +1,18 @@
 <footer class="site-footer">
-  <div class="wrapper">
+  <div class="wrapper footer-content">
     <p>
       © {{ site.time | date: "%Y" }} VanharaLab |
       Faculty of Medicine, Masaryk University
     </p>
-   <img src="{{ '/assets/images/VanharaLab.jpg' | relative_url }}" 
-         alt="VanharaLab"
-     class="footer-logo">
+
+    <div class="footer-logos">
+      <img src="{{ '/assets/images/VanharaLab.jpg' | relative_url }}"
+           alt="VanharaLab"
+           class="footer-logo">
+
+      <img src="{{ '/assets/images/LOGO MEDMUNI.png' | relative_url }}"
+           alt="Faculty of Medicine, Masaryk University"
+           class="footer-logo">
+    </div>
   </div>
 </footer>
