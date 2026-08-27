@@ -307,16 +307,7 @@
   pages: 1383-9
   doi: 10.3892/ijo.2013.1824
   pmid: '23404293'
-- year: '2012'
-  title: 'Growth/differentiation factor-15: prostate cancer suppressor or promoter?'
-  authors: Vaňhara P, Hampl A, Kozubík A, Souček K
-  journal: Prostate cancer and prostatic diseases
-  volume: '15'
-  issue: '4'
-  pages: 320-8
-  doi: 10.1038/pcan.2012.6
-  pmid: '22370725'
-- year: '2012'
+- year: '2013'
   title: Methylation status of <i>TUSC3</i> is a prognostic factor in ovarian cancer
   authors: Pils D, Horak P, Vanhara P, Anees M, Petz M, Alfanz A, Gugerell A, Wittinger
     M, Gleiss A, Auner V, Tong D, Zeillinger R, Braicu EI, Sehouli J, Krainer M
@@ -326,6 +317,15 @@
   pages: 946-54
   doi: 10.1002/cncr.27850
   pmid: '23096450'
+- year: '2012'
+  title: 'Growth/differentiation factor-15: prostate cancer suppressor or promoter?'
+  authors: Vaňhara P, Hampl A, Kozubík A, Souček K
+  journal: Prostate cancer and prostatic diseases
+  volume: '15'
+  issue: '4'
+  pages: 320-8
+  doi: 10.1038/pcan.2012.6
+  pmid: '22370725'
 - year: '2011'
   title: 'Expression of immune-modulatory molecules HLA-G and HLA-E by tumor cells
     in glioblastomas: An unexpected prognostic significance?'
