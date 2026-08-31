@@ -11,7 +11,7 @@ We aim to understand how human tissues develop, change over time, and regenerate
 
 ## Our research
 
-Our lab studies how human tissues respond to stress and disease. We develop new models of human lung and pancreatic diseases to better understand how diseases develop and how tissues repair themselves. We investigate how cells communicate, adapt, and contribute to tissue recovery or disease progression.
+Our lab studies how human tissues respond to stress and disease. We develop new models of human lung and pancreatic diseases to better understand how diseases develop and how tissues repair themselves. We investigate how cells communicate, adapt, and contribute to tissue recovery or malignant transformation.
 
 Using advanced imaging and biological technologies, we study changes in cells and tissues that occur during disease. Our goal is to connect basic biological discoveries with better understanding and future treatment of human diseases, such as lung fibrosis and pancreatic cancer.
 
