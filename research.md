@@ -3,7 +3,7 @@ layout: page
 title: Research
 ---
 
-We are particularly interested in development of "Near-To-Native" tissue models and New Approach Methodologies (NAMs) for investigation of diseases.  
+We are particularly interested in development of "Near-To-Native" tissue models for investigation of diseases that result in loss of fine tissue stuctures and functions.  
 
 <b>Lung fibrosis</b> is a devastating disease in which the delicate lung architecture is progressively replaced by fibrotic tissue, leading to loss of pulmonary functions. We investigate the mechanisms regulating lung epithelial plasticity and regeneration during disease progression. In collaboration with the Clinic of Respiratory Diseases and Tuberculosis, University Hospital Brno, we develop patient-specific models of interstitial lung diseases using induced pluripotent stem cells (iPSCs) reprogrammed from peripheral blood mononuclear cells of patients with pulmonary fibrosis. These iPSCs are differentiated into early lung epithelial progenitor (ELEP) models to study disease-associated cellular responses, epithelial dysfunction, and impaired regenerative capacity.
 
