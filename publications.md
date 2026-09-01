@@ -18,7 +18,7 @@ title: List of publications
 - {{ pub.authors }}.  
   **{{ pub.title }}**.  
   *{{ pub.journal }}*.{% if pub.volume %} {{ pub.year }};{{ pub.volume }}{% if pub.issue %}({{ pub.issue }}){% endif %}{% if pub.pages %}:{{ pub.pages }}{% endif %}.{% endif %}
-  {% if pub.doi %}[DOI](https://doi.org/{{ pub.doi }}).{% endif %}
+{% if pub.doi %}[DOI: {{ pub.doi }}](https://doi.org/{{ pub.doi }}){% endif %}
 
 
 {% endfor %}
