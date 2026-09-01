@@ -1,7 +1,10 @@
+```python
 from pathlib import Path
 import html
+import os
 import re
 import time
+import xml.etree.ElementTree as ET
 
 import requests
 import yaml
@@ -14,7 +17,6 @@ import yaml
 ORCID_ID = "0000-0002-7470-177X"
 
 ORCID_API = "https://pub.orcid.org/v3.0"
-
 ORCID_WORKS_URL = f"{ORCID_API}/{ORCID_ID}/works"
 
 PUBMED_ESEARCH_URL = (
@@ -28,11 +30,39 @@ PUBMED_EFETCH_URL = (
 CROSSREF_URL = "https://api.crossref.org/works/"
 CROSSREF_SEARCH_URL = "https://api.crossref.org/works"
 
+SCOPUS_ABSTRACT_URL = (
+    "https://api.elsevier.com/content/abstract"
+)
+
+SCOPUS_SEARCH_URL = (
+    "https://api.elsevier.com/content/search/scopus"
+)
+
 OUTPUT = (
     Path(__file__).resolve().parent.parent
     / "_data"
     / "publications.yml"
 )
+
+# ------------------------------------------------------------
+# Scopus API key
+#
+# GitHub Actions:
+#
+#   env:
+#     SCOPUS_API_KEY: ${{ secrets.SCOPUS_API_KEY }}
+#
+# Local shell:
+#
+#   export SCOPUS_API_KEY="your-key"
+#
+# ------------------------------------------------------------
+
+SCOPUS_API_KEY = os.getenv(
+    "SCOPUS_API_KEY",
+    "",
+).strip()
+
 
 HEADERS = {
     "Accept": "application/json",
@@ -46,6 +76,7 @@ PAGE_SIZE = 100
 
 PUBMED_DELAY = 0.4
 CROSSREF_DELAY = 0.2
+SCOPUS_DELAY = 0.3
 
 MAX_RETRIES = 5
 
@@ -54,9 +85,19 @@ MAX_RETRIES = 5
 # HTTP
 # ============================================================
 
-def get_request(url, *, params=None, headers=None):
+def get_request(
+    url,
+    *,
+    params=None,
+    headers=None,
+):
     """
     GET request with retry handling.
+
+    Never calls sys.exit().
+
+    Exceptions are raised to the caller, which can decide
+    whether the particular data source is optional.
     """
 
     request_headers = headers or HEADERS
@@ -102,7 +143,9 @@ def get_request(url, *, params=None, headers=None):
 
             time.sleep(wait)
 
-    raise RuntimeError("Request failed after retries")
+    raise RuntimeError(
+        "Request failed after retries"
+    )
 
 
 # ============================================================
@@ -166,7 +209,7 @@ def clean_doi(doi):
 
 
 # ============================================================
-# ORCID - SUMMARY
+# ORCID
 # ============================================================
 
 def get_orcid_works():
@@ -194,13 +237,34 @@ def get_orcid_works():
             f"ORCID request: start={start}, rows={PAGE_SIZE}"
         )
 
-        response = get_request(
-            ORCID_WORKS_URL,
-            params=params,
-            headers=HEADERS,
-        )
+        try:
 
-        data = response.json()
+            response = get_request(
+                ORCID_WORKS_URL,
+                params=params,
+                headers=HEADERS,
+            )
+
+        except Exception as exc:
+
+            print(
+                f"ERROR: ORCID request failed: {exc}"
+            )
+
+            # Do not terminate with exit code 1.
+            return all_groups
+
+        try:
+
+            data = response.json()
+
+        except ValueError as exc:
+
+            print(
+                f"ERROR: Invalid ORCID JSON: {exc}"
+            )
+
+            return all_groups
 
         groups = data.get(
             "group",
@@ -228,11 +292,8 @@ def get_orcid_works():
     return all_groups
 
 
-# ============================================================
-# ORCID HELPERS
-# ============================================================
-
 def get_work_title(work):
+
     return clean_text(
         work.get("title", {})
         .get("title", {})
@@ -241,6 +302,7 @@ def get_work_title(work):
 
 
 def get_work_year(work):
+
     publication_date = work.get(
         "publication-date"
     )
@@ -258,6 +320,7 @@ def get_work_year(work):
 
 
 def get_work_journal(work):
+
     journal = work.get(
         "journal-title"
     )
@@ -270,9 +333,12 @@ def get_work_journal(work):
     )
 
 
-def get_external_id(work, wanted_type):
+def get_external_id(
+    work,
+    wanted_type,
+):
     """
-    Get an external identifier from ORCID.
+    Get external identifier from ORCID.
     """
 
     external_ids = (
@@ -291,19 +357,18 @@ def get_external_id(work, wanted_type):
 
         if id_type == wanted_type.lower():
 
-            value = clean_text(
+            return clean_text(
                 external_id.get(
                     "external-id-value",
                     "",
                 )
             )
 
-            return value
-
     return ""
 
 
 def get_doi(work):
+
     return clean_doi(
         get_external_id(
             work,
@@ -313,6 +378,7 @@ def get_doi(work):
 
 
 def get_pmid(work):
+
     return clean_text(
         get_external_id(
             work,
@@ -321,18 +387,9 @@ def get_pmid(work):
     )
 
 
-# ============================================================
-# ORCID - AUTHORS
-# ============================================================
-
 def get_orcid_authors(work):
     """
-    Extract authors/contributors from an ORCID work.
-
-    ORCID may provide either:
-        credit-name
-    or:
-        given-names + family-name
+    Extract authors/contributors from ORCID.
     """
 
     authors = []
@@ -347,7 +404,7 @@ def get_orcid_authors(work):
         credit_name = clean_text(
             contributor.get(
                 "credit-name",
-                {}
+                {},
             ).get(
                 "value",
                 "",
@@ -355,27 +412,17 @@ def get_orcid_authors(work):
         )
 
         if credit_name:
+
             authors.append(
                 credit_name
             )
+
             continue
-
-        contributor_attributes = (
-            contributor.get(
-                "contributor-attributes",
-                {}
-            )
-        )
-
-        # ORCID normally stores the actual person in
-        # contributor-orcid and the display name in
-        # credit-name. If credit-name is absent, try
-        # contributor-name as a fallback.
 
         contributor_name = clean_text(
             contributor.get(
                 "contributor-name",
-                {}
+                {},
             ).get(
                 "value",
                 "",
@@ -383,26 +430,15 @@ def get_orcid_authors(work):
         )
 
         if contributor_name:
+
             authors.append(
                 contributor_name
             )
-            continue
 
     return ", ".join(authors)
 
 
-# ============================================================
-# ORCID - FULL WORK
-# ============================================================
-
 def get_orcid_work_detail(summary):
-    """
-    Fetch the full ORCID work record.
-
-    The summary is used only to obtain the put-code.
-    The detailed record is the preferred ORCID source
-    for authors and other metadata.
-    """
 
     put_code = summary.get(
         "put-code"
@@ -428,8 +464,8 @@ def get_orcid_work_detail(summary):
     except Exception as exc:
 
         print(
-            f"  WARNING: Could not fetch ORCID "
-            f"work {put_code}: {exc}"
+            f"  WARNING: ORCID work "
+            f"{put_code} failed: {exc}"
         )
 
         return {}
@@ -440,9 +476,6 @@ def get_orcid_work_detail(summary):
 # ============================================================
 
 def get_pmid_from_doi(doi):
-    """
-    Find PMID from DOI.
-    """
 
     if not doi:
         return ""
@@ -475,12 +508,6 @@ def get_pmid_from_doi(doi):
 
 
 def get_pmid_from_title(title):
-    """
-    Find PMID using the exact publication title.
-
-    This is only a fallback when ORCID does not provide
-    a PMID or DOI.
-    """
 
     if not title:
         return ""
@@ -506,18 +533,13 @@ def get_pmid_from_title(title):
         .get("idlist", [])
     )
 
-    if not ids:
-        return ""
+    if ids:
+        return str(ids[0])
 
-    # Exact title search normally gives the correct result.
-    # We nevertheless retrieve the first result only.
-    return str(ids[0])
+    return ""
 
 
 def get_pubmed_metadata(pmid):
-    """
-    Retrieve complete metadata from PubMed.
-    """
 
     if not pmid:
         return {}
@@ -541,25 +563,14 @@ def get_pubmed_metadata(pmid):
             response.text
         )
 
-    except Exception:
+    except ET.ParseError:
 
-        # Import ET locally to keep the main imports tidy.
-        import xml.etree.ElementTree as ET
+        print(
+            f"WARNING: Could not parse PubMed XML "
+            f"for PMID {pmid}"
+        )
 
-        try:
-
-            root = ET.fromstring(
-                response.text
-            )
-
-        except ET.ParseError:
-
-            print(
-                f"WARNING: Could not parse PubMed XML "
-                f"for PMID {pmid}"
-            )
-
-            return {}
+        return {}
 
     article = root.find(
         ".//PubmedArticle"
@@ -769,9 +780,6 @@ def get_pubmed_metadata(pmid):
 # ============================================================
 
 def get_crossref_metadata(doi):
-    """
-    Retrieve metadata from Crossref using DOI.
-    """
 
     if not doi:
         return {}
@@ -798,24 +806,20 @@ def get_crossref_metadata(doi):
 
         return response.json().get(
             "message",
-            {}
+            {},
         )
 
     except Exception as exc:
 
         print(
-            f"WARNING: Crossref failed for {doi}: {exc}"
+            f"WARNING: Crossref failed "
+            f"for {doi}: {exc}"
         )
 
         return {}
 
 
 def get_crossref_metadata_by_title(title):
-    """
-    Search Crossref by title.
-
-    This is a fallback only.
-    """
 
     if not title:
         return {}
@@ -847,7 +851,6 @@ def get_crossref_metadata_by_title(title):
         if not items:
             return {}
 
-        # Select the closest title match.
         normalized_target = normalize_title(
             title
         )
@@ -859,7 +862,7 @@ def get_crossref_metadata_by_title(title):
 
             item_titles = item.get(
                 "title",
-                []
+                [],
             )
 
             if not item_titles:
@@ -879,7 +882,6 @@ def get_crossref_metadata_by_title(title):
                 best_score = score
                 best_item = item
 
-        # Do not accept a weak match.
         if best_item and best_score >= 0.85:
 
             return best_item
@@ -894,10 +896,6 @@ def get_crossref_metadata_by_title(title):
 
 
 def format_crossref_authors(metadata):
-    """
-    Format Crossref authors as:
-    Surname AB, Surname CD
-    """
 
     authors = []
 
@@ -948,14 +946,650 @@ def format_crossref_authors(metadata):
     return ", ".join(authors)
 
 
+def get_crossref_year(metadata):
+
+    for key in (
+        "published-print",
+        "published-online",
+        "published",
+        "issued",
+    ):
+
+        date_parts = (
+            metadata.get(
+                key,
+                {},
+            )
+            .get(
+                "date-parts",
+                [],
+            )
+        )
+
+        if date_parts and date_parts[0]:
+
+            return str(
+                date_parts[0][0]
+            )
+
+    return ""
+
+
+# ============================================================
+# SCOPUS
+# ============================================================
+
+def scopus_available():
+
+    if not SCOPUS_API_KEY:
+
+        print(
+            "WARNING: SCOPUS_API_KEY is not set. "
+            "Scopus fallback disabled."
+        )
+
+        return False
+
+    return True
+
+
+def get_scopus_headers():
+
+    return {
+        "Accept": "application/json",
+        "X-ELS-APIKey": SCOPUS_API_KEY,
+        "User-Agent": HEADERS["User-Agent"],
+    }
+
+
+def get_scopus_metadata_by_identifier(
+    identifier_type,
+    identifier,
+):
+    """
+    Retrieve Scopus metadata using:
+
+        doi
+        pubmed_id
+        scopus_id
+        eid
+        pii
+        pui
+    """
+
+    if not scopus_available():
+        return {}
+
+    if not identifier:
+        return {}
+
+    identifier = clean_text(identifier)
+
+    url = (
+        f"{SCOPUS_ABSTRACT_URL}/"
+        f"{identifier_type}/"
+        f"{requests.utils.quote(identifier, safe='')}"
+    )
+
+    time.sleep(SCOPUS_DELAY)
+
+    try:
+
+        response = get_request(
+            url,
+            headers=get_scopus_headers(),
+            params={
+                "view": "META",
+            },
+        )
+
+        data = response.json()
+
+        return data
+
+    except Exception as exc:
+
+        print(
+            f"WARNING: Scopus lookup failed "
+            f"({identifier_type}={identifier}): {exc}"
+        )
+
+        return {}
+
+
+def get_scopus_search(
+    query,
+):
+    """
+    Search Scopus.
+
+    Used as a final fallback when DOI/PMID lookup
+    is not possible.
+    """
+
+    if not scopus_available():
+        return {}
+
+    if not query:
+        return {}
+
+    params = {
+        "query": query,
+        "count": 5,
+        "start": 0,
+    }
+
+    time.sleep(SCOPUS_DELAY)
+
+    try:
+
+        response = get_request(
+            SCOPUS_SEARCH_URL,
+            params=params,
+            headers=get_scopus_headers(),
+        )
+
+        return response.json()
+
+    except Exception as exc:
+
+        print(
+            f"WARNING: Scopus search failed: {exc}"
+        )
+
+        return {}
+
+
+def scopus_get_value(
+    data,
+    *keys,
+):
+    """
+    Read a value from a Scopus response.
+
+    Supports both direct values and nested dictionaries.
+    """
+
+    current = data
+
+    for key in keys:
+
+        if not isinstance(current, dict):
+            return ""
+
+        current = current.get(
+            key
+        )
+
+    return clean_text(current)
+
+
+def get_scopus_authors(data):
+    """
+    Extract authors from Scopus abstract metadata.
+
+    Scopus commonly returns authors under:
+
+        authors.author
+    """
+
+    authors_data = (
+        data.get(
+            "abstracts-retrieval-response",
+            {},
+        )
+        .get(
+            "authors",
+            {},
+        )
+    )
+
+    author_list = authors_data.get(
+        "author",
+        [],
+    )
+
+    if isinstance(
+        author_list,
+        dict,
+    ):
+
+        author_list = [
+            author_list
+        ]
+
+    authors = []
+
+    for author in author_list:
+
+        if not isinstance(
+            author,
+            dict,
+        ):
+            continue
+
+        surname = clean_text(
+            author.get(
+                "ce:surname",
+                "",
+            )
+        )
+
+        given = clean_text(
+            author.get(
+                "ce:given-name",
+                "",
+            )
+        )
+
+        indexed_name = clean_text(
+            author.get(
+                "ce:indexed-name",
+                "",
+            )
+        )
+
+        if indexed_name:
+
+            authors.append(
+                indexed_name
+            )
+
+        elif surname:
+
+            initials = ""
+
+            for part in re.split(
+                r"[\s\-]+",
+                given,
+            ):
+
+                if part:
+                    initials += part[0].upper()
+
+            if initials:
+
+                authors.append(
+                    f"{surname} {initials}"
+                )
+
+            else:
+
+                authors.append(
+                    surname
+                )
+
+    return ", ".join(authors)
+
+
+def parse_scopus_metadata(data):
+    """
+    Convert Scopus response to our common metadata structure.
+    """
+
+    if not data:
+        return {}
+
+    root = data.get(
+        "abstracts-retrieval-response",
+        {},
+    )
+
+    if not root:
+        return {}
+
+    coredata = root.get(
+        "coredata",
+        {},
+    )
+
+    title = clean_text(
+        coredata.get(
+            "dc:title",
+            "",
+        )
+    )
+
+    authors = get_scopus_authors(
+        data
+    )
+
+    journal = clean_text(
+        coredata.get(
+            "prism:publicationName",
+            "",
+        )
+    )
+
+    year = clean_text(
+        coredata.get(
+            "prism:coverDate",
+            "",
+        )
+    )
+
+    match = re.search(
+        r"\b(19|20)\d{2}\b",
+        year,
+    )
+
+    if match:
+        year = match.group(0)
+
+    volume = clean_text(
+        coredata.get(
+            "prism:volume",
+            "",
+        )
+    )
+
+    issue = clean_text(
+        coredata.get(
+            "prism:issueIdentifier",
+            "",
+        )
+    )
+
+    pages = clean_text(
+        coredata.get(
+            "prism:pageRange",
+            "",
+        )
+    )
+
+    if not pages:
+
+        pages = clean_text(
+            coredata.get(
+                "prism:articleNumber",
+                "",
+            )
+        )
+
+    doi = clean_doi(
+        coredata.get(
+            "prism:doi",
+            "",
+        )
+    )
+
+    pmid = ""
+
+    identifiers = root.get(
+        "item",
+        {},
+    )
+
+    if isinstance(
+        identifiers,
+        dict,
+    ):
+
+        identifiers = identifiers.get(
+            "bibrecord",
+            {},
+        )
+
+        if isinstance(
+            identifiers,
+            dict,
+        ):
+
+            item_info = identifiers.get(
+                "item-info",
+                {},
+            )
+
+            if isinstance(
+                item_info,
+                dict,
+            ):
+
+                db_ident = item_info.get(
+                    "db-ident",
+                    {},
+                )
+
+                if isinstance(
+                    db_ident,
+                    dict,
+                ):
+
+                    pmid = clean_text(
+                        db_ident.get(
+                            "ce:doi",
+                            "",
+                        )
+                    )
+
+    return {
+        "title": title,
+        "authors": authors,
+        "journal": journal,
+        "year": year,
+        "volume": volume,
+        "issue": issue,
+        "pages": pages,
+        "doi": doi,
+        "pmid": pmid,
+    }
+
+
+def get_scopus_metadata(
+    doi="",
+    pmid="",
+    title="",
+):
+    """
+    Retrieve Scopus metadata.
+
+    Priority:
+
+        DOI
+        PMID
+        exact-ish title search
+    """
+
+    if not scopus_available():
+        return {}
+
+    # --------------------------------------------------------
+    # DOI
+    # --------------------------------------------------------
+
+    if doi:
+
+        print(
+            "  Scopus lookup by DOI..."
+        )
+
+        data = get_scopus_metadata_by_identifier(
+            "doi",
+            doi,
+        )
+
+        metadata = parse_scopus_metadata(
+            data
+        )
+
+        if metadata:
+
+            print(
+                "  Scopus metadata: OK"
+            )
+
+            return metadata
+
+    # --------------------------------------------------------
+    # PMID
+    # --------------------------------------------------------
+
+    if pmid:
+
+        print(
+            "  Scopus lookup by PMID..."
+        )
+
+        data = get_scopus_metadata_by_identifier(
+            "pubmed_id",
+            pmid,
+        )
+
+        metadata = parse_scopus_metadata(
+            data
+        )
+
+        if metadata:
+
+            print(
+                "  Scopus metadata: OK"
+            )
+
+            return metadata
+
+    # --------------------------------------------------------
+    # TITLE
+    # --------------------------------------------------------
+
+    if title:
+
+        print(
+            "  Scopus search by title..."
+        )
+
+        query = (
+            f'TITLE("{title}")'
+        )
+
+        data = get_scopus_search(
+            query
+        )
+
+        results = (
+            data.get(
+                "search-results",
+                {},
+            )
+            .get(
+                "entry",
+                [],
+            )
+        )
+
+        if isinstance(
+            results,
+            dict,
+        ):
+
+            results = [
+                results
+            ]
+
+        normalized_target = normalize_title(
+            title
+        )
+
+        best = None
+        best_score = 0
+
+        for result in results:
+
+            candidate_title = clean_text(
+                result.get(
+                    "dc:title",
+                    "",
+                )
+            )
+
+            if not candidate_title:
+                continue
+
+            score = title_similarity(
+                normalized_target,
+                normalize_title(
+                    candidate_title
+                ),
+            )
+
+            if score > best_score:
+
+                best_score = score
+                best = result
+
+        if best and best_score >= 0.85:
+
+            metadata = {
+                "title": clean_text(
+                    best.get(
+                        "dc:title",
+                        "",
+                    )
+                ),
+                "authors": clean_text(
+                    best.get(
+                        "dc:creator",
+                        "",
+                    )
+                ),
+                "journal": clean_text(
+                    best.get(
+                        "prism:publicationName",
+                        "",
+                    )
+                ),
+                "year": extract_year(
+                    best.get(
+                        "prism:coverDate",
+                        "",
+                    )
+                ),
+                "volume": clean_text(
+                    best.get(
+                        "prism:volume",
+                        "",
+                    )
+                ),
+                "issue": clean_text(
+                    best.get(
+                        "prism:issueIdentifier",
+                        "",
+                    )
+                ),
+                "pages": clean_text(
+                    best.get(
+                        "prism:pageRange",
+                        "",
+                    )
+                ),
+                "doi": clean_doi(
+                    best.get(
+                        "prism:doi",
+                        "",
+                    )
+                ),
+                "pmid": clean_text(
+                    best.get(
+                        "pubmed-id",
+                        "",
+                    )
+                ),
+            }
+
+            print(
+                f"  Scopus title match: OK "
+                f"(score={best_score:.2f})"
+            )
+
+            return metadata
+
+    return {}
+
+
 # ============================================================
 # TITLE MATCHING
 # ============================================================
 
 def normalize_title(title):
-    """
-    Normalize title for comparison.
-    """
 
     title = clean_text(
         title
@@ -975,9 +1609,6 @@ def normalize_title(title):
 
 
 def title_similarity(a, b):
-    """
-    Simple token-based Jaccard similarity.
-    """
 
     if not a or not b:
         return 0
@@ -1004,135 +1635,157 @@ def title_similarity(a, b):
     return intersection / union
 
 
+def extract_year(value):
+
+    match = re.search(
+        r"\b(19|20)\d{2}\b",
+        clean_text(value),
+    )
+
+    if match:
+        return match.group(0)
+
+    return ""
+
+
 # ============================================================
 # MERGING
 # ============================================================
+
+def first_nonempty(
+    *values,
+):
+    """
+    Return the first non-empty value.
+    """
+
+    for value in values:
+
+        if value is None:
+            continue
+
+        value = clean_text(value)
+
+        if value:
+            return value
+
+    return ""
+
 
 def merge_publication(
     orcid_data,
     pubmed_data,
     crossref_data,
+    scopus_data,
 ):
     """
-    ORCID is the PRIMARY source.
+    Merge metadata.
 
-    PubMed and Crossref only fill fields that ORCID
-    does not provide.
-
-    Priority per field:
+    Priority:
 
         ORCID
           ↓
         PubMed
           ↓
         Crossref
+          ↓
+        Scopus
+
+    However, Scopus is explicitly used as a fallback for
+    any field that is missing from the previous sources.
     """
 
-    # --------------------------------------------------------
-    # ORCID is always preferred.
-    # --------------------------------------------------------
-
-    title = (
-        orcid_data.get("title")
-        or pubmed_data.get("title")
-        or (
-            clean_text(
-                crossref_data.get(
-                    "title",
-                    [""],
-                )[0]
-            )
-            if crossref_data.get("title")
-            else ""
-        )
+    title = first_nonempty(
+        orcid_data.get("title"),
+        pubmed_data.get("title"),
+        crossref_data.get("title", [""])[0]
+        if crossref_data.get("title")
+        else "",
+        scopus_data.get("title"),
     )
 
-    year = (
-        orcid_data.get("year")
-        or pubmed_data.get("year")
-        or get_crossref_year(
+    year = first_nonempty(
+        orcid_data.get("year"),
+        pubmed_data.get("year"),
+        get_crossref_year(
             crossref_data
-        )
+        ),
+        scopus_data.get("year"),
     )
 
-    journal = (
-        orcid_data.get("journal")
-        or pubmed_data.get("journal")
-        or (
-            clean_text(
-                crossref_data.get(
-                    "container-title",
-                    [""],
-                )[0]
-            )
+    journal = first_nonempty(
+        orcid_data.get("journal"),
+        pubmed_data.get("journal"),
+        (
+            crossref_data.get(
+                "container-title",
+                [""],
+            )[0]
             if crossref_data.get(
                 "container-title"
             )
             else ""
-        )
+        ),
+        scopus_data.get("journal"),
     )
 
-    authors = (
-        orcid_data.get("authors")
-        or pubmed_data.get("authors")
-        or format_crossref_authors(
+    authors = first_nonempty(
+        orcid_data.get("authors"),
+        pubmed_data.get("authors"),
+        format_crossref_authors(
             crossref_data
-        )
+        ),
+        scopus_data.get("authors"),
     )
 
-    volume = (
-        orcid_data.get("volume")
-        or pubmed_data.get("volume")
-        or clean_text(
-            crossref_data.get(
-                "volume",
-                "",
-            )
-        )
+    volume = first_nonempty(
+        orcid_data.get("volume"),
+        pubmed_data.get("volume"),
+        crossref_data.get(
+            "volume",
+            "",
+        ),
+        scopus_data.get("volume"),
     )
 
-    issue = (
-        orcid_data.get("issue")
-        or pubmed_data.get("issue")
-        or clean_text(
-            crossref_data.get(
-                "issue",
-                "",
-            )
-        )
+    issue = first_nonempty(
+        orcid_data.get("issue"),
+        pubmed_data.get("issue"),
+        crossref_data.get(
+            "issue",
+            "",
+        ),
+        scopus_data.get("issue"),
     )
 
-    pages = (
-        orcid_data.get("pages")
-        or pubmed_data.get("pages")
-        or clean_text(
-            crossref_data.get(
-                "page",
-                "",
-            )
-        )
-        or clean_text(
-            crossref_data.get(
-                "article-number",
-                "",
-            )
-        )
+    pages = first_nonempty(
+        orcid_data.get("pages"),
+        pubmed_data.get("pages"),
+        crossref_data.get(
+            "page",
+            "",
+        ),
+        crossref_data.get(
+            "article-number",
+            "",
+        ),
+        scopus_data.get("pages"),
     )
 
-    doi = (
-        orcid_data.get("doi")
-        or pubmed_data.get("doi")
-        or clean_text(
-            crossref_data.get(
-                "DOI",
-                "",
-            )
-        )
+    doi = first_nonempty(
+        orcid_data.get("doi"),
+        pubmed_data.get("doi"),
+        crossref_data.get(
+            "DOI",
+            "",
+        ),
+        scopus_data.get("doi"),
     )
 
-    pmid = (
-        orcid_data.get("pmid")
-        or pubmed_data.get("pmid")
+    pmid = first_nonempty(
+        orcid_data.get("pmid"),
+        pubmed_data.get("pmid"),
+        scopus_data.get("pmid"),
     )
 
     return {
@@ -1148,36 +1801,35 @@ def merge_publication(
     }
 
 
-def get_crossref_year(metadata):
+# ============================================================
+# FIELD COMPLETENESS
+# ============================================================
+
+def publication_missing_data(
+    publication,
+):
     """
-    Extract publication year from Crossref.
+    Return True when at least one important field is missing.
     """
 
-    for key in (
-        "published-print",
-        "published-online",
-        "published",
-        "issued",
-    ):
+    important_fields = (
+        "title",
+        "authors",
+        "journal",
+        "year",
+        "doi",
+        "pmid",
+    )
 
-        date_parts = (
-            metadata.get(
-                key,
-                {}
-            )
-            .get(
-                "date-parts",
-                []
+    return any(
+        not clean_text(
+            publication.get(
+                field,
+                "",
             )
         )
-
-        if date_parts and date_parts[0]:
-
-            return str(
-                date_parts[0][0]
-            )
-
-    return ""
+        for field in important_fields
+    )
 
 
 # ============================================================
@@ -1188,11 +1840,53 @@ def main():
 
     groups = get_orcid_works()
 
+    # --------------------------------------------------------
+    # IMPORTANT:
+    #
+    # No SystemExit / exit(1).
+    #
+    # If ORCID is unavailable, create/keep an empty YAML
+    # and return normally.
+    # --------------------------------------------------------
+
     if not groups:
 
-        raise SystemExit(
-            "ERROR: ORCID returned no publications."
+        print(
+            "WARNING: ORCID returned no publications."
         )
+
+        OUTPUT.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        try:
+
+            with open(
+                OUTPUT,
+                "w",
+                encoding="utf-8",
+            ) as file:
+
+                yaml.safe_dump(
+                    [],
+                    file,
+                    allow_unicode=True,
+                    sort_keys=False,
+                    default_flow_style=False,
+                )
+
+            print(
+                f"Saved empty publication list to: {OUTPUT}"
+            )
+
+        except Exception as exc:
+
+            print(
+                f"WARNING: Could not save YAML: {exc}"
+            )
+
+        return
 
     publications = []
 
@@ -1200,6 +1894,19 @@ def main():
     print("=" * 60)
     print("Processing publications")
     print("=" * 60)
+
+    if SCOPUS_API_KEY:
+
+        print(
+            "Scopus fallback: ENABLED"
+        )
+
+    else:
+
+        print(
+            "Scopus fallback: DISABLED "
+            "(SCOPUS_API_KEY missing)"
+        )
 
     for index, group in enumerate(
         groups,
@@ -1214,10 +1921,6 @@ def main():
         if not summaries:
             continue
 
-        # ----------------------------------------------------
-        # Select first summary.
-        # ----------------------------------------------------
-
         summary = summaries[0]
 
         summary_title = get_work_title(
@@ -1226,11 +1929,12 @@ def main():
 
         print()
         print(
-            f"[{index}/{len(groups)}] {summary_title}"
+            f"[{index}/{len(groups)}] "
+            f"{summary_title}"
         )
 
         # ----------------------------------------------------
-        # FULL ORCID RECORD
+        # ORCID DETAIL
         # ----------------------------------------------------
 
         work = get_orcid_work_detail(
@@ -1243,7 +1947,6 @@ def main():
                 "  ORCID detail: FAILED"
             )
 
-            # Fall back to summary.
             work = summary
 
         else:
@@ -1256,61 +1959,51 @@ def main():
         # ORCID DATA
         # ----------------------------------------------------
 
-        title = get_work_title(
-            work
-        )
-
-        year = get_work_year(
-            work
-        )
-
-        journal = get_work_journal(
-            work
-        )
-
-        doi = get_doi(
-            work
-        )
-
-        pmid = get_pmid(
-            work
-        )
-
-        authors = get_orcid_authors(
-            work
-        )
-
         orcid_data = {
-            "title": title,
-            "year": year,
-            "journal": journal,
-            "doi": doi,
-            "pmid": pmid,
-            "authors": authors,
+            "title": get_work_title(
+                work
+            ),
+            "year": get_work_year(
+                work
+            ),
+            "journal": get_work_journal(
+                work
+            ),
+            "doi": get_doi(
+                work
+            ),
+            "pmid": get_pmid(
+                work
+            ),
+            "authors": get_orcid_authors(
+                work
+            ),
         }
 
         print(
-            f"  ORCID authors: "
-            f"{'FOUND' if authors else 'MISSING'}"
+            "  ORCID authors: "
+            f"{'FOUND' if orcid_data['authors'] else 'MISSING'}"
         )
 
         print(
-            f"  ORCID DOI:     "
-            f"{doi or '-'}"
+            "  ORCID DOI:     "
+            f"{orcid_data['doi'] or '-'}"
         )
 
         print(
-            f"  ORCID PMID:    "
-            f"{pmid or '-'}"
+            "  ORCID PMID:    "
+            f"{orcid_data['pmid'] or '-'}"
         )
 
         # ----------------------------------------------------
         # PMID LOOKUP
         # ----------------------------------------------------
 
+        pmid = orcid_data["pmid"]
+
         if not pmid:
 
-            if doi:
+            if orcid_data["doi"]:
 
                 print(
                     "  Looking up PMID from DOI..."
@@ -1319,7 +2012,7 @@ def main():
                 try:
 
                     pmid = get_pmid_from_doi(
-                        doi
+                        orcid_data["doi"]
                     )
 
                 except Exception as exc:
@@ -1328,8 +2021,7 @@ def main():
                         f"  WARNING: PMID lookup failed: {exc}"
                     )
 
-            # If DOI is absent, try title.
-            if not pmid and title:
+            if not pmid and orcid_data["title"]:
 
                 print(
                     "  Looking up PMID from title..."
@@ -1338,7 +2030,7 @@ def main():
                 try:
 
                     pmid = get_pmid_from_title(
-                        title
+                        orcid_data["title"]
                     )
 
                 except Exception as exc:
@@ -1347,13 +2039,13 @@ def main():
                         f"  WARNING: PMID title search failed: {exc}"
                     )
 
-            if pmid:
+        if pmid:
 
-                print(
-                    f"  Found PMID: {pmid}"
-                )
+            orcid_data["pmid"] = pmid
 
-                orcid_data["pmid"] = pmid
+            print(
+                f"  PMID: {pmid}"
+            )
 
         # ----------------------------------------------------
         # PUBMED
@@ -1369,16 +2061,14 @@ def main():
 
             try:
 
-                pubmed_data = (
-                    get_pubmed_metadata(
-                        pmid
-                    )
+                pubmed_data = get_pubmed_metadata(
+                    pmid
                 )
 
-            except requests.RequestException as exc:
+            except Exception as exc:
 
                 print(
-                    f"  WARNING: PubMed request failed: {exc}"
+                    f"  WARNING: PubMed failed: {exc}"
                 )
 
             if pubmed_data:
@@ -1387,23 +2077,13 @@ def main():
                     "  PubMed metadata: OK"
                 )
 
-                if orcid_data["authors"]:
-
-                    print(
-                        "  Authors source: ORCID"
-                    )
-
-                else:
-
-                    print(
-                        "  Authors source: PubMed fallback"
-                    )
-
         # ----------------------------------------------------
         # CROSSREF
         # ----------------------------------------------------
 
         crossref_data = {}
+
+        doi = orcid_data["doi"]
 
         if doi:
 
@@ -1425,16 +2105,13 @@ def main():
 
         elif not pubmed_data:
 
-            # No DOI and no PubMed.
-            # Crossref title search is the final fallback.
-
             print(
                 "  Searching Crossref by title..."
             )
 
             crossref_data = (
                 get_crossref_metadata_by_title(
-                    title
+                    orcid_data["title"]
                 )
             )
 
@@ -1445,22 +2122,76 @@ def main():
                 )
 
         # ----------------------------------------------------
-        # MERGE
+        # PRELIMINARY MERGE
+        # ----------------------------------------------------
+
+        preliminary = merge_publication(
+            orcid_data,
+            pubmed_data,
+            crossref_data,
+            {},
+        )
+
+        # ----------------------------------------------------
+        # SCOPUS
+        #
+        # Use Scopus if ANY important data is missing.
+        # ----------------------------------------------------
+
+        scopus_data = {}
+
+        if SCOPUS_API_KEY:
+
+            if publication_missing_data(
+                preliminary
+            ):
+
+                scopus_data = get_scopus_metadata(
+                    doi=preliminary["doi"],
+                    pmid=preliminary["pmid"],
+                    title=preliminary["title"],
+                )
+
+                if not scopus_data:
+
+                    print(
+                        "  Scopus: no matching metadata"
+                    )
+
+            else:
+
+                print(
+                    "  Scopus: not needed"
+                )
+
+        # ----------------------------------------------------
+        # FINAL MERGE
         # ----------------------------------------------------
 
         publication = merge_publication(
             orcid_data,
             pubmed_data,
             crossref_data,
+            scopus_data,
         )
 
         # ----------------------------------------------------
-        # SOURCE REPORT
+        # REPORT
         # ----------------------------------------------------
 
         print(
             "  Final authors: "
             f"{publication['authors'] or 'MISSING'}"
+        )
+
+        print(
+            "  Final journal: "
+            f"{publication['journal'] or 'MISSING'}"
+        )
+
+        print(
+            "  Final year: "
+            f"{publication['year'] or 'MISSING'}"
         )
 
         print(
@@ -1516,10 +2247,26 @@ def main():
 
         else:
 
-            key = (
-                "title:"
-                + normalize_title(title)
+            normalized = normalize_title(
+                title
             )
+
+            if normalized:
+
+                key = (
+                    "title:"
+                    + normalized
+                )
+
+            else:
+
+                # Keep records even if everything is missing.
+                key = (
+                    "unknown:"
+                    + str(
+                        len(unique)
+                    )
+                )
 
         unique[key] = publication
 
@@ -1531,7 +2278,9 @@ def main():
     # SORT
     # ========================================================
 
-    def year_sort_key(publication):
+    def year_sort_key(
+        publication,
+    ):
 
         year = publication.get(
             "year",
@@ -1544,6 +2293,7 @@ def main():
         )
 
         if match:
+
             return int(
                 match.group(0)
             )
@@ -1557,6 +2307,9 @@ def main():
 
     # ========================================================
     # VALIDATION
+    #
+    # Validation produces warnings only.
+    # It NEVER exits with code 1.
     # ========================================================
 
     print()
@@ -1575,13 +2328,34 @@ def main():
     missing_titles = [
         publication
         for publication in publications
-        if not publication["title"]
+        if not publication.get("title")
     ]
 
     missing_authors = [
         publication
         for publication in publications
-        if not publication["authors"]
+        if not publication.get("authors")
+    ]
+
+    missing_journals = [
+        publication
+        for publication in publications
+        if not publication.get("journal")
+    ]
+
+    missing_years = [
+        publication
+        for publication in publications
+        if not publication.get("year")
+    ]
+
+    missing_identifiers = [
+        publication
+        for publication in publications
+        if (
+            not publication.get("doi")
+            and not publication.get("pmid")
+        )
     ]
 
     if missing_titles:
@@ -1602,8 +2376,34 @@ def main():
 
             print(
                 "  - "
-                + publication["title"]
+                + (
+                    publication.get(
+                        "title"
+                    )
+                    or "(untitled)"
+                )
             )
+
+    if missing_journals:
+
+        print(
+            f"WARNING: {len(missing_journals)} "
+            f"publications have no journal."
+        )
+
+    if missing_years:
+
+        print(
+            f"WARNING: {len(missing_years)} "
+            f"publications have no year."
+        )
+
+    if missing_identifiers:
+
+        print(
+            f"WARNING: {len(missing_identifiers)} "
+            f"publications have neither DOI nor PMID."
+        )
 
     # ========================================================
     # SAVE YAML
@@ -1614,19 +2414,33 @@ def main():
         exist_ok=True,
     )
 
-    with open(
-        OUTPUT,
-        "w",
-        encoding="utf-8",
-    ) as file:
+    try:
 
-        yaml.safe_dump(
-            publications,
-            file,
-            allow_unicode=True,
-            sort_keys=False,
-            default_flow_style=False,
+        with open(
+            OUTPUT,
+            "w",
+            encoding="utf-8",
+        ) as file:
+
+            yaml.safe_dump(
+                publications,
+                file,
+                allow_unicode=True,
+                sort_keys=False,
+                default_flow_style=False,
+            )
+
+    except Exception as exc:
+
+        print(
+            f"WARNING: Could not save YAML: {exc}"
         )
+
+        return
+
+    # ========================================================
+    # FINAL STATUS
+    # ========================================================
 
     print()
     print("=" * 60)
@@ -1641,6 +2455,14 @@ def main():
         f"Saved to: {OUTPUT}"
     )
 
+    print(
+        "Missing metadata is treated as WARNING only."
+    )
+
+    print(
+        "Script finished normally."
+    )
+
 
 # ============================================================
 # ENTRY POINT
@@ -1648,3 +2470,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
