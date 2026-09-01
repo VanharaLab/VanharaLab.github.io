@@ -5,7 +5,6 @@ import time
 
 import requests
 import yaml
-import xml.etree.ElementTree as ET
 
 
 # ============================================================
@@ -14,9 +13,9 @@ import xml.etree.ElementTree as ET
 
 ORCID_ID = "0000-0002-7470-177X"
 
-ORCID_URL = (
-    f"https://pub.orcid.org/v3.0/{ORCID_ID}/works"
-)
+ORCID_API = "https://pub.orcid.org/v3.0"
+
+ORCID_WORKS_URL = f"{ORCID_API}/{ORCID_ID}/works"
 
 PUBMED_ESEARCH_URL = (
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -27,6 +26,7 @@ PUBMED_EFETCH_URL = (
 )
 
 CROSSREF_URL = "https://api.crossref.org/works/"
+CROSSREF_SEARCH_URL = "https://api.crossref.org/works"
 
 OUTPUT = (
     Path(__file__).resolve().parent.parent
@@ -42,25 +42,21 @@ HEADERS = {
     ),
 }
 
-# ORCID pagination
 PAGE_SIZE = 100
 
-# PubMed requests must be gentle to avoid HTTP 429
 PUBMED_DELAY = 0.4
+CROSSREF_DELAY = 0.2
 
-# Retry settings
 MAX_RETRIES = 5
 
 
 # ============================================================
-# HTTP HELPERS
+# HTTP
 # ============================================================
 
 def get_request(url, *, params=None, headers=None):
     """
     GET request with retry handling.
-
-    Especially important for PubMed, which may return HTTP 429.
     """
 
     request_headers = headers or HEADERS
@@ -68,6 +64,7 @@ def get_request(url, *, params=None, headers=None):
     for attempt in range(MAX_RETRIES):
 
         try:
+
             response = requests.get(
                 url,
                 params=params,
@@ -85,7 +82,6 @@ def get_request(url, *, params=None, headers=None):
                 )
 
                 time.sleep(wait)
-
                 continue
 
             response.raise_for_status()
@@ -115,7 +111,7 @@ def get_request(url, *, params=None, headers=None):
 
 def clean_text(value):
     """
-    Clean HTML/XML artifacts and whitespace.
+    Remove HTML/XML artifacts and normalize whitespace.
     """
 
     if value is None:
@@ -123,23 +119,19 @@ def clean_text(value):
 
     value = str(value)
 
-    # Decode HTML entities such as &amp;
     value = html.unescape(value)
 
-    # Remove common XML/HTML tags
     value = re.sub(
         r"<[^>]+>",
         "",
         value,
     )
 
-    # Remove XML escape artifacts
     value = value.replace(
         "\\n",
         " ",
     )
 
-    # Collapse whitespace
     value = re.sub(
         r"\s+",
         " ",
@@ -156,31 +148,30 @@ def clean_doi(doi):
 
     doi = clean_text(doi)
 
-    doi = doi.replace(
-        "https://doi.org/",
+    doi = re.sub(
+        r"^https?://doi\.org/",
         "",
+        doi,
+        flags=re.IGNORECASE,
     )
 
-    doi = doi.replace(
-        "http://doi.org/",
+    doi = re.sub(
+        r"^doi:\s*",
         "",
-    )
-
-    doi = doi.replace(
-        "doi:",
-        "",
+        doi,
+        flags=re.IGNORECASE,
     )
 
     return doi.strip()
 
 
 # ============================================================
-# ORCID
+# ORCID - SUMMARY
 # ============================================================
 
 def get_orcid_works():
     """
-    Download ALL works from ORCID using pagination.
+    Download all work summaries from ORCID.
     """
 
     print()
@@ -204,7 +195,7 @@ def get_orcid_works():
         )
 
         response = get_request(
-            ORCID_URL,
+            ORCID_WORKS_URL,
             params=params,
             headers=HEADERS,
         )
@@ -281,11 +272,7 @@ def get_work_journal(work):
 
 def get_external_id(work, wanted_type):
     """
-    Return external ID from ORCID.
-
-    Example:
-        DOI
-        PMID
+    Get an external identifier from ORCID.
     """
 
     external_ids = (
@@ -334,44 +321,118 @@ def get_pmid(work):
     )
 
 
+# ============================================================
+# ORCID - AUTHORS
+# ============================================================
+
 def get_orcid_authors(work):
     """
-    Extract authors if available in ORCID summary.
+    Extract authors/contributors from an ORCID work.
 
-    ORCID summaries often do not contain complete author
-    information, therefore PubMed/Crossref may later replace it.
+    ORCID may provide either:
+        credit-name
+    or:
+        given-names + family-name
     """
 
     authors = []
 
-    contributors = work.get(
-        "contributors",
-        {}
-    ).get(
-        "contributor",
-        []
+    contributors = (
+        work.get("contributors", {})
+        .get("contributor", [])
     )
 
     for contributor in contributors:
 
-        credit_name = (
+        credit_name = clean_text(
             contributor.get(
                 "credit-name",
                 {}
+            ).get(
+                "value",
+                "",
             )
-            .get("value", "")
-        )
-
-        credit_name = clean_text(
-            credit_name
         )
 
         if credit_name:
             authors.append(
                 credit_name
             )
+            continue
+
+        contributor_attributes = (
+            contributor.get(
+                "contributor-attributes",
+                {}
+            )
+        )
+
+        # ORCID normally stores the actual person in
+        # contributor-orcid and the display name in
+        # credit-name. If credit-name is absent, try
+        # contributor-name as a fallback.
+
+        contributor_name = clean_text(
+            contributor.get(
+                "contributor-name",
+                {}
+            ).get(
+                "value",
+                "",
+            )
+        )
+
+        if contributor_name:
+            authors.append(
+                contributor_name
+            )
+            continue
 
     return ", ".join(authors)
+
+
+# ============================================================
+# ORCID - FULL WORK
+# ============================================================
+
+def get_orcid_work_detail(summary):
+    """
+    Fetch the full ORCID work record.
+
+    The summary is used only to obtain the put-code.
+    The detailed record is the preferred ORCID source
+    for authors and other metadata.
+    """
+
+    put_code = summary.get(
+        "put-code"
+    )
+
+    if not put_code:
+        return {}
+
+    url = (
+        f"{ORCID_API}/{ORCID_ID}"
+        f"/work/{put_code}"
+    )
+
+    try:
+
+        response = get_request(
+            url,
+            headers=HEADERS,
+        )
+
+        return response.json()
+
+    except Exception as exc:
+
+        print(
+            f"  WARNING: Could not fetch ORCID "
+            f"work {put_code}: {exc}"
+        )
+
+        return {}
 
 
 # ============================================================
@@ -413,12 +474,49 @@ def get_pmid_from_doi(doi):
     return ""
 
 
+def get_pmid_from_title(title):
+    """
+    Find PMID using the exact publication title.
+
+    This is only a fallback when ORCID does not provide
+    a PMID or DOI.
+    """
+
+    if not title:
+        return ""
+
+    params = {
+        "db": "pubmed",
+        "term": f'"{title}"[Title]',
+        "retmode": "json",
+        "retmax": 5,
+    }
+
+    time.sleep(PUBMED_DELAY)
+
+    response = get_request(
+        PUBMED_ESEARCH_URL,
+        params=params,
+    )
+
+    data = response.json()
+
+    ids = (
+        data.get("esearchresult", {})
+        .get("idlist", [])
+    )
+
+    if not ids:
+        return ""
+
+    # Exact title search normally gives the correct result.
+    # We nevertheless retrieve the first result only.
+    return str(ids[0])
+
+
 def get_pubmed_metadata(pmid):
     """
     Retrieve complete metadata from PubMed.
-
-    Returns an empty dictionary if PubMed does not contain
-    the requested article.
     """
 
     if not pmid:
@@ -438,14 +536,30 @@ def get_pubmed_metadata(pmid):
     )
 
     try:
+
         root = ET.fromstring(
             response.text
         )
-    except ET.ParseError:
-        print(
-            f"WARNING: Could not parse PubMed XML for PMID {pmid}"
-        )
-        return {}
+
+    except Exception:
+
+        # Import ET locally to keep the main imports tidy.
+        import xml.etree.ElementTree as ET
+
+        try:
+
+            root = ET.fromstring(
+                response.text
+            )
+
+        except ET.ParseError:
+
+            print(
+                f"WARNING: Could not parse PubMed XML "
+                f"for PMID {pmid}"
+            )
+
+            return {}
 
     article = root.find(
         ".//PubmedArticle"
@@ -501,7 +615,6 @@ def get_pubmed_metadata(pmid):
         )
     )
 
-    # Some PubMed records use MedlineDate instead of Year
     if not year:
 
         medline_date = clean_text(
@@ -586,10 +699,13 @@ def get_pubmed_metadata(pmid):
         if lastname:
 
             if initials:
+
                 authors.append(
                     f"{lastname} {initials}"
                 )
+
             else:
+
                 authors.append(
                     lastname
                 )
@@ -654,9 +770,7 @@ def get_pubmed_metadata(pmid):
 
 def get_crossref_metadata(doi):
     """
-    Retrieve metadata from Crossref.
-
-    Crossref is used only as a fallback/supplement.
+    Retrieve metadata from Crossref using DOI.
     """
 
     if not doi:
@@ -669,6 +783,8 @@ def get_crossref_metadata(doi):
             safe="",
         )
     )
+
+    time.sleep(CROSSREF_DELAY)
 
     try:
 
@@ -692,6 +808,89 @@ def get_crossref_metadata(doi):
         )
 
         return {}
+
+
+def get_crossref_metadata_by_title(title):
+    """
+    Search Crossref by title.
+
+    This is a fallback only.
+    """
+
+    if not title:
+        return {}
+
+    params = {
+        "query.title": title,
+        "rows": 5,
+    }
+
+    time.sleep(CROSSREF_DELAY)
+
+    try:
+
+        response = get_request(
+            CROSSREF_SEARCH_URL,
+            params=params,
+            headers={
+                "User-Agent": HEADERS["User-Agent"],
+                "Accept": "application/json",
+            },
+        )
+
+        items = (
+            response.json()
+            .get("message", {})
+            .get("items", [])
+        )
+
+        if not items:
+            return {}
+
+        # Select the closest title match.
+        normalized_target = normalize_title(
+            title
+        )
+
+        best_item = None
+        best_score = 0
+
+        for item in items:
+
+            item_titles = item.get(
+                "title",
+                []
+            )
+
+            if not item_titles:
+                continue
+
+            candidate = normalize_title(
+                item_titles[0]
+            )
+
+            score = title_similarity(
+                normalized_target,
+                candidate,
+            )
+
+            if score > best_score:
+
+                best_score = score
+                best_item = item
+
+        # Do not accept a weak match.
+        if best_item and best_score >= 0.85:
+
+            return best_item
+
+    except Exception as exc:
+
+        print(
+            f"WARNING: Crossref title search failed: {exc}"
+        )
+
+    return {}
 
 
 def format_crossref_authors(metadata):
@@ -724,8 +923,6 @@ def format_crossref_authors(metadata):
         if not family:
             continue
 
-        # If Crossref provides an ORCID/initial-like family name,
-        # retain the surname and construct initials from given name.
         initials = ""
 
         for part in re.split(
@@ -737,15 +934,74 @@ def format_crossref_authors(metadata):
                 initials += part[0].upper()
 
         if initials:
+
             authors.append(
                 f"{family} {initials}"
             )
+
         else:
+
             authors.append(
                 family
             )
 
     return ", ".join(authors)
+
+
+# ============================================================
+# TITLE MATCHING
+# ============================================================
+
+def normalize_title(title):
+    """
+    Normalize title for comparison.
+    """
+
+    title = clean_text(
+        title
+    ).lower()
+
+    title = re.sub(
+        r"[^a-z0-9]+",
+        " ",
+        title,
+    )
+
+    return re.sub(
+        r"\s+",
+        " ",
+        title,
+    ).strip()
+
+
+def title_similarity(a, b):
+    """
+    Simple token-based Jaccard similarity.
+    """
+
+    if not a or not b:
+        return 0
+
+    a_tokens = set(
+        a.split()
+    )
+
+    b_tokens = set(
+        b.split()
+    )
+
+    if not a_tokens or not b_tokens:
+        return 0
+
+    intersection = len(
+        a_tokens & b_tokens
+    )
+
+    union = len(
+        a_tokens | b_tokens
+    )
+
+    return intersection / union
 
 
 # ============================================================
@@ -758,48 +1014,50 @@ def merge_publication(
     crossref_data,
 ):
     """
-    Merge metadata.
+    ORCID is the PRIMARY source.
 
-    Priority:
+    PubMed and Crossref only fill fields that ORCID
+    does not provide.
 
+    Priority per field:
+
+        ORCID
+          ↓
         PubMed
           ↓
         Crossref
-          ↓
-        ORCID
-
-    ORCID remains the source that guarantees that the work
-    exists in the final list.
     """
 
+    # --------------------------------------------------------
+    # ORCID is always preferred.
+    # --------------------------------------------------------
+
     title = (
-        pubmed_data.get("title")
+        orcid_data.get("title")
+        or pubmed_data.get("title")
         or (
             clean_text(
                 crossref_data.get(
                     "title",
-                    [""] ,
+                    [""],
                 )[0]
             )
             if crossref_data.get("title")
             else ""
         )
-        or orcid_data.get(
-            "title",
-            "",
-        )
     )
 
     year = (
-        pubmed_data.get("year")
-        or orcid_data.get(
-            "year",
-            "",
+        orcid_data.get("year")
+        or pubmed_data.get("year")
+        or get_crossref_year(
+            crossref_data
         )
     )
 
     journal = (
-        pubmed_data.get("journal")
+        orcid_data.get("journal")
+        or pubmed_data.get("journal")
         or (
             clean_text(
                 crossref_data.get(
@@ -812,25 +1070,19 @@ def merge_publication(
             )
             else ""
         )
-        or orcid_data.get(
-            "journal",
-            "",
-        )
     )
 
     authors = (
-        pubmed_data.get("authors")
+        orcid_data.get("authors")
+        or pubmed_data.get("authors")
         or format_crossref_authors(
             crossref_data
-        )
-        or orcid_data.get(
-            "authors",
-            "",
         )
     )
 
     volume = (
-        pubmed_data.get("volume")
+        orcid_data.get("volume")
+        or pubmed_data.get("volume")
         or clean_text(
             crossref_data.get(
                 "volume",
@@ -840,7 +1092,8 @@ def merge_publication(
     )
 
     issue = (
-        pubmed_data.get("issue")
+        orcid_data.get("issue")
+        or pubmed_data.get("issue")
         or clean_text(
             crossref_data.get(
                 "issue",
@@ -850,7 +1103,8 @@ def merge_publication(
     )
 
     pages = (
-        pubmed_data.get("pages")
+        orcid_data.get("pages")
+        or pubmed_data.get("pages")
         or clean_text(
             crossref_data.get(
                 "page",
@@ -868,6 +1122,12 @@ def merge_publication(
     doi = (
         orcid_data.get("doi")
         or pubmed_data.get("doi")
+        or clean_text(
+            crossref_data.get(
+                "DOI",
+                "",
+            )
+        )
     )
 
     pmid = (
@@ -886,6 +1146,38 @@ def merge_publication(
         "doi": clean_doi(doi),
         "pmid": clean_text(pmid),
     }
+
+
+def get_crossref_year(metadata):
+    """
+    Extract publication year from Crossref.
+    """
+
+    for key in (
+        "published-print",
+        "published-online",
+        "published",
+        "issued",
+    ):
+
+        date_parts = (
+            metadata.get(
+                key,
+                {}
+            )
+            .get(
+                "date-parts",
+                []
+            )
+        )
+
+        if date_parts and date_parts[0]:
+
+            return str(
+                date_parts[0][0]
+            )
+
+    return ""
 
 
 # ============================================================
@@ -923,12 +1215,46 @@ def main():
             continue
 
         # ----------------------------------------------------
-        # ORCID can have multiple summaries in one group.
-        # We inspect the first one because all summaries in
-        # a group represent the same work.
+        # Select first summary.
         # ----------------------------------------------------
 
-        work = summaries[0]
+        summary = summaries[0]
+
+        summary_title = get_work_title(
+            summary
+        )
+
+        print()
+        print(
+            f"[{index}/{len(groups)}] {summary_title}"
+        )
+
+        # ----------------------------------------------------
+        # FULL ORCID RECORD
+        # ----------------------------------------------------
+
+        work = get_orcid_work_detail(
+            summary
+        )
+
+        if not work:
+
+            print(
+                "  ORCID detail: FAILED"
+            )
+
+            # Fall back to summary.
+            work = summary
+
+        else:
+
+            print(
+                "  ORCID detail: OK"
+            )
+
+        # ----------------------------------------------------
+        # ORCID DATA
+        # ----------------------------------------------------
 
         title = get_work_title(
             work
@@ -950,53 +1276,87 @@ def main():
             work
         )
 
+        authors = get_orcid_authors(
+            work
+        )
+
         orcid_data = {
             "title": title,
             "year": year,
             "journal": journal,
             "doi": doi,
             "pmid": pmid,
-            "authors": get_orcid_authors(
-                work
-            ),
+            "authors": authors,
         }
 
-        print()
         print(
-            f"[{index}/{len(groups)}] {title}"
+            f"  ORCID authors: "
+            f"{'FOUND' if authors else 'MISSING'}"
         )
 
         print(
-            f"  ORCID DOI:  {doi or '-'}"
+            f"  ORCID DOI:     "
+            f"{doi or '-'}"
         )
 
         print(
-            f"  ORCID PMID: {pmid or '-'}"
+            f"  ORCID PMID:    "
+            f"{pmid or '-'}"
         )
 
         # ----------------------------------------------------
-        # PMID
+        # PMID LOOKUP
         # ----------------------------------------------------
 
-        if not pmid and doi:
+        if not pmid:
 
-            print(
-                f"  Looking up PMID from DOI..."
-            )
+            if doi:
 
-            pmid = get_pmid_from_doi(
-                doi
-            )
+                print(
+                    "  Looking up PMID from DOI..."
+                )
 
-            orcid_data["pmid"] = pmid
+                try:
+
+                    pmid = get_pmid_from_doi(
+                        doi
+                    )
+
+                except Exception as exc:
+
+                    print(
+                        f"  WARNING: PMID lookup failed: {exc}"
+                    )
+
+            # If DOI is absent, try title.
+            if not pmid and title:
+
+                print(
+                    "  Looking up PMID from title..."
+                )
+
+                try:
+
+                    pmid = get_pmid_from_title(
+                        title
+                    )
+
+                except Exception as exc:
+
+                    print(
+                        f"  WARNING: PMID title search failed: {exc}"
+                    )
 
             if pmid:
+
                 print(
                     f"  Found PMID: {pmid}"
                 )
 
+                orcid_data["pmid"] = pmid
+
         # ----------------------------------------------------
-        # PubMed
+        # PUBMED
         # ----------------------------------------------------
 
         pubmed_data = {}
@@ -1004,7 +1364,7 @@ def main():
         if pmid:
 
             print(
-                f"  Fetching PubMed metadata..."
+                "  Fetching PubMed metadata..."
             )
 
             try:
@@ -1015,7 +1375,7 @@ def main():
                     )
                 )
 
-            except requests.HTTPError as exc:
+            except requests.RequestException as exc:
 
                 print(
                     f"  WARNING: PubMed request failed: {exc}"
@@ -1027,8 +1387,20 @@ def main():
                     "  PubMed metadata: OK"
                 )
 
+                if orcid_data["authors"]:
+
+                    print(
+                        "  Authors source: ORCID"
+                    )
+
+                else:
+
+                    print(
+                        "  Authors source: PubMed fallback"
+                    )
+
         # ----------------------------------------------------
-        # Crossref
+        # CROSSREF
         # ----------------------------------------------------
 
         crossref_data = {}
@@ -1036,7 +1408,7 @@ def main():
         if doi:
 
             print(
-                f"  Fetching Crossref metadata..."
+                "  Fetching Crossref metadata..."
             )
 
             crossref_data = (
@@ -1046,18 +1418,59 @@ def main():
             )
 
             if crossref_data:
+
                 print(
                     "  Crossref metadata: OK"
                 )
 
+        elif not pubmed_data:
+
+            # No DOI and no PubMed.
+            # Crossref title search is the final fallback.
+
+            print(
+                "  Searching Crossref by title..."
+            )
+
+            crossref_data = (
+                get_crossref_metadata_by_title(
+                    title
+                )
+            )
+
+            if crossref_data:
+
+                print(
+                    "  Crossref title match: OK"
+                )
+
         # ----------------------------------------------------
-        # Merge
+        # MERGE
         # ----------------------------------------------------
 
         publication = merge_publication(
             orcid_data,
             pubmed_data,
             crossref_data,
+        )
+
+        # ----------------------------------------------------
+        # SOURCE REPORT
+        # ----------------------------------------------------
+
+        print(
+            "  Final authors: "
+            f"{publication['authors'] or 'MISSING'}"
+        )
+
+        print(
+            "  Final DOI: "
+            f"{publication['doi'] or '-'}"
+        )
+
+        print(
+            "  Final PMID: "
+            f"{publication['pmid'] or '-'}"
         )
 
         publications.append(
@@ -1105,7 +1518,7 @@ def main():
 
             key = (
                 "title:"
-                + title.lower()
+                + normalize_title(title)
             )
 
         unique[key] = publication
@@ -1165,12 +1578,32 @@ def main():
         if not publication["title"]
     ]
 
+    missing_authors = [
+        publication
+        for publication in publications
+        if not publication["authors"]
+    ]
+
     if missing_titles:
 
         print(
             f"WARNING: {len(missing_titles)} "
             f"publications have no title."
         )
+
+    if missing_authors:
+
+        print(
+            f"WARNING: {len(missing_authors)} "
+            f"publications have no authors."
+        )
+
+        for publication in missing_authors:
+
+            print(
+                "  - "
+                + publication["title"]
+            )
 
     # ========================================================
     # SAVE YAML
