@@ -2,6 +2,11 @@
 layout: page
 title: News
 ---
+<b>September 2026 Best publication prize!</b>
+
+Together with our colleagues from University Hospital Brno we were awarded by Clinical Oncology journal, published by Czech Medical Association of J. E. Purkyně (Klinická onkologie), with <b>best publication prize </b>for the article [Integrated clinical-biological infrastructure for precision oncology in pancreatic adenocarcinoma - experience with REDCap implementation in clinical setting](https://www.linkos.cz/files/klinicka-onkologie/555/6533.pdf) by Petr Moravčík et al. 
+
+<hr>
 <b>August 2026: Two papers published! </b>
 
   A review article by Mirka Pantůčková entitled [Beyond the genome: alternative splicing as a key driver of cellular plasticity and clinical heterogeneity in pancreatic cancer](https://link.springer.com/article/10.1007/s10238-026-02308-y) was published in Clinical and Experimental Medicine! Here we summarize the bioinformatics approach to investigation of aletrantice splicing in pancreatic cancer. 
