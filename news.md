@@ -2,9 +2,13 @@
 layout: page
 title: News
 ---
-<b>September 2026 Best publication prize!</b>
+<b>September 2026: Best publication prize!</b>
 
-Together with our colleagues from University Hospital Brno we were awarded by Clinical Oncology journal, published by Czech Medical Association of J. E. Purkyně (Klinická onkologie), with <b>best publication prize </b>for the article [Integrated clinical-biological infrastructure for precision oncology in pancreatic adenocarcinoma - experience with REDCap implementation in clinical setting](https://www.linkos.cz/files/klinicka-onkologie/555/6533.pdf) by Petr Moravčík et al. 
+Together with our colleagues from University Hospital Brno, we are delighted to announce that our article, [“Integrated clinical-biological infrastructure for precision oncology in pancreatic adenocarcinoma – experience with REDCap implementation in clinical setting,”](https://www.linkos.cz/files/klinicka-onkologie/555/6533.pdf) by Petr Moravčík et al., has received the Best Publication Prize from Clinical Oncology (Klinická onkologie), published by the Czech Medical Association of J. E. Purkyně.
+
+This recognition highlights the importance of integrating clinical and biological data to advance precision oncology in pancreatic adenocarcinoma.
+
+Congratulations to all co-authors and collaborators on this achievement!
 
 <hr>
 <b>August 2026: Two papers published! </b>
