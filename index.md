@@ -7,7 +7,7 @@ layout: default
 Research laboratory at Masaryk University, Faculty of Medicine.
 
 ## Our mission
-We aim to understand how human tissues develop, change over time, and regenerate in health and disease.
+We aim to understand how human tissues develop from stem cells, change over time, and regenerate in health and disease.
 
 ## Our research
 
