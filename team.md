@@ -35,11 +35,11 @@ Master student
 **Nilay Yüksel**   🇹🇷  
 Master student
 
-**Vítězslav Havlíček**    🇨🇿
+**Vítězslav Havlíček**    🇨🇿  
 MD student
 
-**Lukáš Jan**   🇨🇿
+**Lukáš Jan**   🇨🇿  
 MD student
 
 **Adela Cengelova**    🇸🇰  
-High School Research Project
+High school research project
