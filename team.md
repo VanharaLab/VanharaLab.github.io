@@ -40,3 +40,6 @@ MD student
 
 **Lukáš Jan**   🇨🇿
 MD student
+
+**Adela Cengelova**    🇸🇰  
+High School Research Project
