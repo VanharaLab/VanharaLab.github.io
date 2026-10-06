@@ -41,5 +41,8 @@ MD student
 **Lukáš Jan**   🇨🇿  
 MD student
 
+**Alexandra Kolbányiová**  🇸🇰  
+MD student
+
 **Adela Cengelova**    🇸🇰  
 High school research project
