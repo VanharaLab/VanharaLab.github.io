@@ -44,5 +44,8 @@ MD student
 **Alexandra Kolbányiová**  🇸🇰  
 MD student
 
+**Anna Pribulová**  🇸🇰  
+Master student
+
 **Adela Cengelova**    🇸🇰  
 High school research project
