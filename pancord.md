@@ -15,3 +15,9 @@ The database was established as part of the research project AZV NU23-08-00241, 
 PANCORD is jointly maintained by the Institute of Histology and Embryology, Faculty of Medicine, Masaryk University, and the Department of Surgery, Faculty of Medicine, Masaryk University and University Hospital Brno. If you are interested in cooperation contact us directly. 
 
 PANCORD runs on [REDCap](https://redcap.czecrin.cz/redcap_v17.3.17/index.php?pid=93)
+
+<div style="display: flex; align-items: center; flex-wrap: wrap;">
+<img src="/assets/images/med-uhe-lg-eng-rgb-01.png" alt="Department of Histology and Embryology" style="width: 200px; height: auto; margin-right: 400px;">
+<img src="/assets/images/uh-brno-logo-en-blue-rgb.png" alt="University Hospital Brno" style="width: 200px; height: auto;">  
+<img src="/assets/images/REDCap.png" alt="REDCAp" style="width: 200px; height: auto;">  
+</div>
