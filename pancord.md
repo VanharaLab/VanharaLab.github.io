@@ -14,7 +14,7 @@ The database was established as part of the research project AZV NU23-08-00241, 
 
 PANCORD is jointly developed by the Institute of Histology and Embryology, Faculty of Medicine, Masaryk University, and the [Center for Precision Medicine](https://www.fnbrno.cz/en/center-for-precision-medicine/t7823) and the [Department of Surgery, Faculty of Medicine, Masaryk University and University Hospital Brno](https://www.fnbrno.cz/chirurgicka-klinika/k1448). If you are interested in research cooperation, please contact us directly. 
 
-<div style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; column-gap: 180px;">
+<div style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; column-gap: 80px;">
 <img src="/assets/images/med-uhe-lg-eng-rgb-012.jpg" alt="Department of Histology and Embryology" style="width:180px; height: auto;">
 <img src="/assets/images/uh-brno-logo-en-blue-rgb.png" alt="University Hospital Brno" style="width: 180px; height: auto;">  
 <img src="/assets/images/REDCap.png" alt="REDCAp" style="width: 200px; height: auto;">  
