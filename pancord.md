@@ -19,6 +19,8 @@ PANCORD is jointly developed by the Institute of Histology and Embryology, Facul
 <a href="https://www.fnbrno.cz/en" target="_blank" rel="noopener noreferrer">
   <img src="/assets/images/uh-brno-logo-en-blue-rgb.png" alt="University Hospital Brno" style="width: 180px; max-width: 100%; height: auto;">  
 </a>
-  
+<a href="https://www.histology.med.muni.cz" target="_blank" rel="noopener noreferrer">
 <img src="/assets/images/REDCap.png" alt="REDCAp" style="width: 180px; max-width: 100%; height: auto;">  
+</a>
+  
 </div>
