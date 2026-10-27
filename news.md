@@ -2,6 +2,9 @@
 layout: page
 title: News
 ---
+<b>October 2026: PANCORD database officially open for research cooperation</b>
+<hr>
+
 <b>September 2026: Best publication prize!</b>
 
 Together with our colleagues from University Hospital Brno, we are delighted to announce that our article, [Integrated clinical-biological infrastructure for precision oncology in pancreatic adenocarcinoma – experience with REDCap implementation in clinical setting](https://www.linkos.cz/files/klinicka-onkologie/555/6533.pdf), by Petr Moravčík et al., has received the Best Publication Prize from Clinical Oncology (Klinická onkologie), published by the Czech Society for Oncology of the Czech Medical Association of J. E. Purkyně.
