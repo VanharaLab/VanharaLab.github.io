@@ -12,7 +12,7 @@ The database provides a platform for the identification and validation of diagno
 
 The database was established as part of the research project AZV NU23-08-00241, [Development of Ex Vivo Cellular Models for Pancreatic Adenocarcinoma: Markers and Targets for Precision Medicine](https://www.med.muni.cz/en/research-and-development/project-support/ongoing-projects/70369?page=2), funded by the [Czech Health Council](https://www.azvcr.cz/en/) of the Ministry of Health of the Czech Republic. 
 
-PANCORD is jointly developed by the Department of Histology and Embryology, Faculty of Medicine, Masaryk University, and the [Center for Precision Medicine](https://www.fnbrno.cz/en/center-for-precision-medicine/t7823) and the [Department of Surgery, Faculty of Medicine, Masaryk University and University Hospital Brno](https://www.fnbrno.cz/chirurgicka-klinika/k1448). 
+PANCORD is jointly developed by the [Department of Histology and Embryology](www.histology.med.muni.cz), Faculty of Medicine, Masaryk University, the [Center for Precision Medicine](https://www.fnbrno.cz/en/center-for-precision-medicine/t7823), Faculty of Medicine, Masaryk University and University Hospital Brno, and the [Department of Surgery](https://www.fnbrno.cz/chirurgicka-klinika/k1448), Faculty of Medicine, Masaryk University and University Hospital Brno. 
 
 If you are interested in research cooperation, please 
 <a href="mailto:pancord@space.muni.cz?subject=Kontakt%20z%20webu" class="contact-button"> contact us 
